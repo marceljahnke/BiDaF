@@ -1,7 +1,10 @@
 # BiDaF Baseline
 
 This project is part of the AI laboratory of the Leibniz university Hanover (WiSe 19/20).
-The task is to use the **BiDaF** model with four different datasets, namely:
+
+## Task
+Given a question and a set of passages, rank them by relevance to the
+question using the **BiDaF** model, for the following data sets:
 
 - MS MARCO Passage Retrieval
 - FiQA
@@ -21,6 +24,8 @@ The resulting data wil be used as a baseline in further studies. In addition, it
 
 ## Objectives
 
-- working BiDaF model for all four datasets
-- good documentation of the code
-- possibility to extend the project with other datasets
+- Implement the BiDAF model
+- Modify the output layer to produce a score of a passage w.r.t. a query
+- Implement ranking metrics (MRR, MAP)
+- Good documentation of the code
+- (possibility to extend the project with other datasets)
