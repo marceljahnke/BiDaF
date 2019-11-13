@@ -10,7 +10,17 @@ The task is to use the **BiDaF** model with four different datasets, namely:
 
 The resulting data wil be used as a baseline in further studies. In addition, it is desirable that the model can easily be extended by further data sets.
 
+## Requirements
+...
 
-# Setup
+## Training
+...
 
-tbc..
+## Prediction
+...
+
+## Objectives
+
+- working BiDaF model for all four datasets
+- good documentation of the code
+- possibility to extend the project with other datasets
