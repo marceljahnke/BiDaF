@@ -8,8 +8,8 @@ from torch.nn.functional import nll_loss
 from torch.autograd import Variable
 import numpy as np
 
-import mrcqa
-from mrcqa.modules.highway import Highways
+from embeddings import TokenEmbedding, CharEmbedding, CatEmbedding
+from highway import Highways
 
 
 class BidafModel(nn.Module):
@@ -427,18 +427,18 @@ class BidafModel(nn.Module):
         num_tokens = len(vocab)
         num_chars = len(c_vocab)
 
-        token_embs = mrcqa.modules.TokenEmbedding(
+        token_embs = TokenEmbedding(
             num_tokens, config['embedding_dim'],
             output_dim=config.get('embedding_reduce'))
 
         _config = config['characters']
-        char_embs = mrcqa.modules.CharEmbedding(
+        char_embs = CharEmbedding(
             num_chars,
             _config.get('dim', 16),
             _config.get('num_filters', 100),
             _config.get('filter_sizes', [5]))
         args = (
-                mrcqa.modules.CatEmbedding([token_embs, char_embs]),
+                CatEmbedding([token_embs, char_embs]),
                 config.get('num_highways', 2),
                 config.get('num_lstm', 2),
                 config.get('hidden_size', 100),
