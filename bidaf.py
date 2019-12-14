@@ -38,11 +38,13 @@ class BidafModel(nn.Module):
                                    bidirectional=True)
         self.attention = AttentionMatrix(self.bidir_hidden_size)
 
+        #---------- anpassen ---------
         # Second hidden_size is for extractor.
         self.start_projection = nn.Linear(
             4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)
         self.end_projection = nn.Linear(
             4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)
+        #----------------------------
 
         if dropout and dropout > 0:
             self.dropout = nn.Dropout(p=dropout)
@@ -216,7 +218,7 @@ class BidafModel(nn.Module):
             dim=2)
         extracted = self.dropout(self._pack_and_unpack_lstm(
             merged_passage, p_lengths, self.extractor))
-
+# ------------------ ändern ---------------------------
         # Use the features to get the start point probability vectors.
         # Also use it to as attention over the features.
         start_input = self.dropout(
@@ -233,6 +235,7 @@ class BidafModel(nn.Module):
         start_reps = start_reps.expand(
             batch_size, p_num_tokens, self.bidir_hidden_size)
 
+        #Unten muss angepasst werden an neue Architektur
         # Uses various level of features to create the end point probability
         # vectors.
         # [b, n, 7*hidden_size]
@@ -257,7 +260,7 @@ class BidafModel(nn.Module):
         end_log_probs = nn.functional.log_softmax(end_logits, dim=1)
 
         return start_log_probs, end_log_probs
-
+# -------------------------- ändern -----------------------------------
     @classmethod
     def get_loss(cls, start_log_probs, end_log_probs, starts, ends):
         """

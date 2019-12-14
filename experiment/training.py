@@ -13,7 +13,6 @@ import numpy as np
 import torch
 import torch.optim as optim
 import h5py
-
 from bidaf import BidafModel
 
 from experiment.checkpointing import *
@@ -104,7 +103,9 @@ def init_state(config, args):
     char_to_id = {'': 0}
     print('Loading data...')
     print('with encoding utf8')
-    with open(args.data, encoding='utf-8') as f_o:
+    #with open(args.data, encoding='utf-8') as f_o:
+    data = "./data/train_v2.1.json"
+    with open(data, encoding='utf-8') as f_o:
         data, _ = load_data(json.load(f_o), span_only=True, answered_only=True)
     print('Tokenizing data...')
     data = tokenize_data(data, token_to_id, char_to_id)
@@ -188,10 +189,10 @@ def main():
                            "when generating random word representations.")
 
     args = argparser.parse_args()
-
-    config_filepath = os.path.join(args.exp_folder, 'config.yaml')
+    config_filepath = "./experiment/config.yaml" #os.path.join(args.exp_folder, 'config.yaml')
     with open(config_filepath) as f:
         config = yaml.load(f)
+
 
     checkpoint, training_state, epoch = try_to_resume(
             args.force_restart, args.exp_folder)
@@ -221,7 +222,7 @@ def main():
         print('Starting epoch', epoch)
         train(epoch, model, optimizer, data, args)
         checkpoint(model, epoch, optimizer,
-                                 checkpoint, args.exp_folder)
+                   checkpoint, args.exp_folder)
 
     return
 
