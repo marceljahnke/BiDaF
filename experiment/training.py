@@ -150,14 +150,17 @@ def train(epoch, model, optimizer, data, args):
     """
     Train for one epoch.
     """
+    '''
+    data should contain for one batch size:
+        queries (text)
+        passages (text)
+        relevances (0 or 1)
+    '''
 
     for batch_id, (qids, passages, queries, answers, _) in enumerate(data):
-        start_log_probs, end_log_probs = model(
-            passages[:2], passages[2],
-            queries[:2], queries[2])
-        loss = model.get_loss(
-            start_log_probs, end_log_probs,
-            answers[:, 0], answers[:, 1])
+        predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2]) # parameters not final
+        #loss = model.get_loss(start_log_probs, end_log_probs, answers[:, 0], answers[:, 1])
+        loss = torch.nn.functional.binary_cross_entropy(predicted_relevance, answers) # predicted_relevance tensor [batch size, 1], answers tensor [batch size, 1] (either 0 or 1)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
