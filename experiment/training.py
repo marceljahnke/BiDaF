@@ -10,13 +10,14 @@ import os.path
 import itertools
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.optim as optim
 import h5py
 from bidaf import BidafModel
 
 from experiment.checkpointing import *
-from experiment.dataset import load_data, tokenize_data, EpochGen
+from experiment.dataset import load_data, tokenize_data, EpochGen, load_data_passage_ranking
 from experiment.dataset import SymbolEmbSourceNorm
 from experiment.dataset import SymbolEmbSourceText
 from experiment.dataset import symbol_injection
@@ -105,6 +106,17 @@ def init_state(config, args):
     print('with encoding utf8')
     #with open(args.data, encoding='utf-8') as f_o:
     data = "./data/train_v2.1.json"
+
+    # --------- load TSVs as pandas data frames
+    path_to_passages = 'needs path'
+    path_to_queries = 'needs path'
+    path_to_relevance = 'needs path'
+    passages = pd.read_csv(path_to_passages, sep='.\t', names=['pid', 'passage'])
+    queries = pd.read_csv(path_to_queries, sep='\t', names=['qid', 'query'])
+    relevance = pd.read_csv(path_to_relevance, sep='\t', names=['qid', 'trec0', 'pid', 'trec1'])
+    data = load_data_passage_ranking(passages, queries, relevance)
+    # ---------- done loading data
+
     with open(data, encoding='utf-8') as f_o:
         data, _ = load_data(json.load(f_o), span_only=True, answered_only=True)
     print('Tokenizing data...')
