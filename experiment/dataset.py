@@ -26,12 +26,14 @@ def load_data_passage_ranking(passages: DataFrame, queries: DataFrame, relevance
     # queries = queries.sort_values(by=['qid'], kind='heapsort') # beschleunigt zugriff nicht, da Queries geteilt ?
     relevance = relevance.sort_values(by=['qid', 'pid']) # sort via mergesort (standard for multiple cols)
 
-    relevance_rows = len(DataFrame.index)
+    relevance_rows = len(relevance.index)
 
     # rows = number of rows in relevance * 2
     # columns = qid, query, pid, passage, relevance score
-    data = np.empty((relevance_rows * 2, 5))
-
+    data = np.empty((relevance_rows * 2, 5), dtype=[('qid', np.int), ('query', 'S100'), ('pid', np.int),
+                                                    ('passage', 'S500'), ('relevance', np.int)])
+    data = np.rec.array(data)
+    print(data.dtype)
     i = 0
     while i < relevance_rows:
         qid = relevance.iloc[i]['qid']
@@ -50,6 +52,10 @@ def load_data_passage_ranking(passages: DataFrame, queries: DataFrame, relevance
         # update data positive examples
         for pid, passage in rel_passages:
             # data row: [qid, query, pid, passage, relevance score]
+            print('passage id :', pid)
+            print('passage id :', passage)
+            print('passage id :', pid)
+            print('passage id :', pid)
             data[i] = [qid, query, pid, passage, 1]
             i += 1
 
@@ -62,6 +68,8 @@ def load_data_passage_ranking(passages: DataFrame, queries: DataFrame, relevance
             data[i] = [qid, query, pid, passage, 0]
             i += 1
 
+        #shuffle data
+        np.random.shuffle(data)
     return data
 
 def load_data(source, span_only, answered_only):

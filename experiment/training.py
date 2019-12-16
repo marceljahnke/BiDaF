@@ -105,16 +105,20 @@ def init_state(config, args):
     print('Loading data...')
     print('with encoding utf8')
     #with open(args.data, encoding='utf-8') as f_o:
-    data = "./data/train_v2.1.json"
+    #data = "./data/train_v2.1.json"
 
     # --------- load TSVs as pandas data frames
-    path_to_passages = 'needs path'
-    path_to_queries = 'needs path'
-    path_to_relevance = 'needs path'
-    passages = pd.read_csv(path_to_passages, sep='.\t', names=['pid', 'passage'])
+    path_to_passages = './data/collection.tsv'
+    path_to_queries = './data/queries.train.tsv'
+    path_to_relevance = './data/qrels.train.tsv'
+    passages = pd.read_csv(path_to_passages, sep='\t', names=['pid', 'passage'])
+    print('Loaded Passages')
     queries = pd.read_csv(path_to_queries, sep='\t', names=['qid', 'query'])
+    print('Loaded Queries')
     relevance = pd.read_csv(path_to_relevance, sep='\t', names=['qid', 'trec0', 'pid', 'trec1'])
+    print('Loaded Relevances')
     data = load_data_passage_ranking(passages, queries, relevance)
+    print('Generated positive and negative examples')
     # ---------- done loading data
 
     with open(data, encoding='utf-8') as f_o:
@@ -243,4 +247,5 @@ def main():
 
 
 if __name__ == '__main__':
+    # run with: python experiment/training.py --word_rep ./data/glove.840B.300d.txt ./result/ ./data/
     main()
