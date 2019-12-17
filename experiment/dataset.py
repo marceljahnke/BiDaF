@@ -9,6 +9,7 @@ Module used to manage data:
 import torch
 from torch.autograd import Variable
 import numpy as np
+import pandas as pd
 from pandas import DataFrame
 
 from text_input import rich_tokenize
@@ -30,10 +31,12 @@ def load_data_passage_ranking(passages: DataFrame, queries: DataFrame, relevance
 
     # rows = number of rows in relevance * 2
     # columns = qid, query, pid, passage, relevance score
-    data = np.empty((relevance_rows * 2, 5), dtype=[('qid', np.int), ('query', 'S100'), ('pid', np.int),
-                                                    ('passage', 'S500'), ('relevance', np.int)])
-    data = np.rec.array(data)
-    print(data.dtype)
+    # data = np.empty((relevance_rows * 2, 5), dtype=[('qid', np.int), ('query', 'S100'), ('pid', np.int),
+    #                                           ('passage', 'S500'), ('relevance', np.int)])
+    # data = np.rec.array(data)
+    # print(data.dtype)
+    data = []
+
     i = 0
     while i < relevance_rows:
         qid = relevance.iloc[i]['qid']
@@ -52,11 +55,7 @@ def load_data_passage_ranking(passages: DataFrame, queries: DataFrame, relevance
         # update data positive examples
         for pid, passage in rel_passages:
             # data row: [qid, query, pid, passage, relevance score]
-            print('passage id :', pid)
-            print('passage id :', passage)
-            print('passage id :', pid)
-            print('passage id :', pid)
-            data[i] = [qid, query, pid, passage, 1]
+            data.append((qid, query, pid, passage, 1))
             i += 1
 
         # generate negative examples
@@ -65,11 +64,14 @@ def load_data_passage_ranking(passages: DataFrame, queries: DataFrame, relevance
         for pid in not_rel_passages:
             pid = pid
             passage = passages.iloc[pid]['passage']
-            data[i] = [qid, query, pid, passage, 0]
+            data.append((qid, query, pid, passage, 0))
             i += 1
 
-        #shuffle data
-        np.random.shuffle(data)
+    # generate dataframe
+    data = pd.DataFrame(data, columns=['qid', 'query', 'pid', 'passage', 'relevance']) # cheaper to append to list and create dataframe in one go
+
+    #shuffle data (in-place and reset indices, while preventing extra column with old indices)
+    data = data.sample(frac=1).reset_index(drop=True)
     return data
 
 def load_data(source, span_only, answered_only):

@@ -166,12 +166,6 @@ def train(epoch, model, optimizer, data, args):
     """
     Train for one epoch.
     """
-    '''
-    data should contain for one batch size:
-        queries (text)
-        passages (text)
-        relevances (0 or 1)
-    '''
 
     for batch_id, (qids, passages, queries, answers, _) in enumerate(data):
         predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2]) # parameters not final
