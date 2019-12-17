@@ -58,6 +58,8 @@ def load_data_passage_ranking(passages: DataFrame, queries: DataFrame, relevance
             data.append((qid, query, pid, passage, 1))
             i += 1
 
+        # index i is now at the position of the qid in the relevance table
+
         # generate negative examples
         not_rel_passages = np.setdiff1d(passages['pid'].to_numpy(), np.asarray([p[0] for p in rel_passages]))
         not_rel_passages = np.random.choice(not_rel_passages, len(rel_passages), replace=False)
@@ -65,7 +67,6 @@ def load_data_passage_ranking(passages: DataFrame, queries: DataFrame, relevance
             pid = pid
             passage = passages.iloc[pid]['passage']
             data.append((qid, query, pid, passage, 0))
-            i += 1
 
     # generate dataframe
     data = pd.DataFrame(data, columns=['qid', 'query', 'pid', 'passage', 'relevance']) # cheaper to append to list and create dataframe in one go
