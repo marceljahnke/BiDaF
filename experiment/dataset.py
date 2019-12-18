@@ -108,7 +108,6 @@ def tokenize_data(data, token_to_id, char_to_id, limit=None):
     """
     tokenized = []
     for _, row in data.iterrows():
-        print(row['passage'])
         q_tokens, q_chars, _, _, _ = \
             rich_tokenize(row['query'], token_to_id, char_to_id, update=True)
         p_tokens, p_chars, _, _, mapping = \

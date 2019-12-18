@@ -17,18 +17,21 @@ def load_data(path_to_passages: str, path_to_queries: str, path_to_relevance: st
         :return: table with the form [n x 3], number of rows are equal to rows of relevance * 2, columns are query, passage and relevance
     """
 
-    # import data
+    # import and filter data
     passages = pd.read_csv(path_to_passages, sep='\t', header=0, names=['index', 'pid', 'passage', 'timestamp'], encoding='utf-8')
     passages = passages.drop(columns=['index', 'timestamp'])
-    print(passages)
+    nan_pids = (passages.loc[passages['passage'].isnull()])['pid'] # pandas series
+    passages = passages.dropna()
 
     queries = pd.read_csv(path_to_queries, sep='\t', header=0, names=['index', 'qid', 'query', 'timestamp'], encoding='utf-8')
     queries = queries.drop(columns=['index', 'timestamp'])
-    print(queries)
+    # nan_qids = (queries.loc[queries['query'].isnull()])['qid']  # empty series
+    queries = queries.dropna()
 
     relevance = pd.read_csv(path_to_relevance, sep='\t', header=0, names=['index', 'qid', 'pid'], encoding='utf-8')
     relevance = relevance.drop(columns=['index'])
-    print(relevance)
+    # relevance = relevance.dropna()
+    relevance = relevance[~relevance['pid'].isin(nan_pids)] # filter rows with relevant nan passages
 
     np.random.seed(1234)
 
@@ -73,6 +76,10 @@ def load_data(path_to_passages: str, path_to_queries: str, path_to_relevance: st
     data = pd.DataFrame(data, columns=['query', 'passage',
                                        'relevance'])  # cheaper to append to list and create dataframe in one go
 
+    if data.isnull().values.any():
+        print("contains nan values")
+    else:
+        print("no nan values")
     # shuffle data (in-place and reset indices, while preventing extra column with old indices)
     # data.sample(frac=1).reset_index(drop=True)
     return data
