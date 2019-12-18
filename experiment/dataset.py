@@ -107,49 +107,19 @@ def tokenize_data(data, token_to_id, char_to_id, limit=None):
     Answer indexes are start:stop range of tokens.
     """
     tokenized = []
-    for qid, passage, query, (start, stop) in data:
+    for _, row in data.iterrows():
+        print(row['passage'])
         q_tokens, q_chars, _, _, _ = \
-            rich_tokenize(query, token_to_id, char_to_id, update=True)
+            rich_tokenize(row['query'], token_to_id, char_to_id, update=True)
         p_tokens, p_chars, _, _, mapping = \
-            rich_tokenize(passage['passage_text'],
-                          token_to_id, char_to_id, update=True)
-
-        if start == 0 and stop == 0:
-            pass  # No answer; nop, since 0 == 0
-        elif start == 0 and stop == len(passage):
-            stop = len(p_tokens)  # Now point to just after last token.
-        else:
-            t_start = None
-            t_end = len(p_tokens)
-            for t_ind, (_start, _end) in enumerate(mapping):
-                if start < _end:
-                    t_start = t_ind
-                    break
-            assert t_start is not None
-            for t_ind, (_start, _end) in \
-                    enumerate(mapping[t_start:], t_start):
-                if stop < _start:
-                    t_end = t_ind
-                    break
-            start = t_start  # Now point to first token in answer.
-            stop = t_end  # Now point to after the last token in answer.
+            rich_tokenize(row['passage'], token_to_id, char_to_id, update=True)
 
         # Keep or not based on length of passage.
         if limit is not None and len(p_tokens) > limit:
-            if stop <= limit:
-                # Passage is too long, but it can be trimmed.
-                p_tokens = p_tokens[:limit]
-            else:
-                # Passage is too long, but it cannot be trimmed.
-                continue
+            # Passage is too long, but it can be trimmed.
+            p_tokens = p_tokens[:limit]
 
-        tokenized.append(
-            (qid,
-             (p_tokens, p_chars),
-             (q_tokens, q_chars),
-             (start, stop),
-             mapping))
-
+        tokenized.append(((p_tokens, p_chars), (q_tokens, q_chars), row['relevance'], mapping))
     return tokenized
 
 
@@ -355,29 +325,25 @@ class EpochGen(object):
         """
 
         if self.shuffle:
-            np.random.shuffle(self.idx)
+            self.data.sample(frac=1).reset_index(drop=True)
 
         for start_ind in range(0, self.n_samples - 1, self.batch_size):
             batch_idx = self.idx[start_ind:start_ind+self.batch_size]
 
-            qids = [self.data[ind][0] for ind in batch_idx]
-            passages = [self.data[ind][1][0] for ind in batch_idx]
-            c_passages = [self.data[ind][1][1] for ind in batch_idx]
-            queries = [self.data[ind][2][0] for ind in batch_idx]
-            c_queries = [self.data[ind][2][1] for ind in batch_idx]
-            answers = [self.data[ind][3] for ind in batch_idx]
-            mappings = [self.data[ind][4] for ind in batch_idx]
+            passages = [self.data[ind][0][0] for ind in batch_idx]
+            c_passages = [self.data[ind][0][1] for ind in batch_idx]
+            queries = [self.data[ind][1][0] for ind in batch_idx]
+            c_queries = [self.data[ind][1][1] for ind in batch_idx]
+            relevances = [self.data[ind][2] for ind in batch_idx]
+            mappings = [self.data[ind][3] for ind in batch_idx]
 
             passages = self.process_batch_for_length(
                     passages, c_passages)
             queries = self.process_batch_for_length(
                     queries, c_queries)
 
-            answers = Variable(self.tensor_type(answers))
+            relevances = Variable(self.tensor_type(relevances))
 
-            batch = (qids,
-                     passages, queries,
-                     answers,
-                     mappings)
+            batch = (passages, queries, relevances, mappings)
             yield batch
         return

@@ -113,20 +113,20 @@ def init_state(config, args):
     # --------- load TSVs as pandas data frames
 
     # --------- FiQA
-    # path_to_passages = './data/fiqa/FiQA_train_doc_final.tsv'
-    # path_to_queries = './data/fiqa/FiQA_train_question_final.tsv'
-    # path_to_relevance = './data/fiqa/FiQA_train_question_doc_final.tsv'
-
+    path_to_passages = './data/fiqa/FiQA_train_doc_final.tsv'
+    path_to_queries = './data/fiqa/FiQA_train_question_final.tsv'
+    path_to_relevance = './data/fiqa/FiQA_train_question_doc_final.tsv'
+    data = fiqa.load_data(path_to_passages, path_to_queries, path_to_relevance)
     # --------- MS MARCO
-    path_to_passages = './data/ms_marco/collection.tsv'
-    path_to_queries = './data/ms_marco/queries.train.tsv'
-    path_to_relevance = './data/ms_marco/qrels.train.tsv'
-    data = ms.load_data(path_to_passages, path_to_queries, path_to_relevance)
+    # path_to_passages = './data/ms_marco/collection.tsv'
+    # path_to_queries = './data/ms_marco/queries.train.tsv'
+    # path_to_relevance = './data/ms_marco/qrels.train.tsv'
+    # data = ms.load_data(path_to_passages, path_to_queries, path_to_relevance)
     print('Generated positive and negative examples')
     # ---------- done loading data
 
-    with open(data, encoding='utf-8') as f_o:
-        data, _ = load_data(json.load(f_o), span_only=True, answered_only=True)
+    #with open(data, encoding='utf-8') as f_o:
+    #    data, _ = load_data(json.load(f_o), span_only=True, answered_only=True)
     print('Tokenizing data...')
     data = tokenize_data(data, token_to_id, char_to_id)
     data = get_loader(data, config)
@@ -171,10 +171,10 @@ def train(epoch, model, optimizer, data, args):
     Train for one epoch.
     """
 
-    for batch_id, (_, queries, _, passages, relevance) in enumerate(data):
+    for batch_id, (passages, queries, relevances, _) in enumerate(data):
         predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2]) # parameters not final
         #loss = model.get_loss(start_log_probs, end_log_probs, answers[:, 0], answers[:, 1])
-        loss = model.get_loss(predicted_relevance, relevance) # ?
+        loss = model.get_loss(predicted_relevance, relevances) # ?
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()

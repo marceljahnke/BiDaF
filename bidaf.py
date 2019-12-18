@@ -241,40 +241,6 @@ class BidafModel(nn.Module):
         x = self.fc4(x)
         relevance_score = nn.functional.log_softmax(x, dim=1)
 
-        '''
-        # And turns into probabilities
-        start_probs = nn.functional.softmax(start_logits, dim=1)
-        # And then into representation, as attention.
-        # [b, 1, hidden_size] -> [b, p_num_tokens, hidden_size]
-        start_reps = start_probs.unsqueeze(1).bmm(extracted)
-        start_reps = start_reps.expand(
-            batch_size, p_num_tokens, self.bidir_hidden_size)
-
-        #Unten muss angepasst werden an neue Architektur
-        # Uses various level of features to create the end point probability
-        # vectors.
-        # [b, n, 7*hidden_size]
-        end_reps = torch.cat([
-            merged_passage,
-            extracted,
-            start_reps,
-            extracted * start_reps],
-            dim=2)
-        enc_end = self.dropout(self._pack_and_unpack_lstm(
-            end_reps, p_lengths, self.end_encoder))
-        end_input = self.dropout(torch.cat([
-            merged_passage, enc_end], dim=2))
-        # [b, p_num_tokens, 7*h] -> [b, n, 1] -> [b, n]
-        end_projection = self.end_projection(end_input).squeeze(2)
-        # Mask
-        end_logits = end_projection * p_mask + (p_mask - 1) * 1e20
-
-        # Applies the final log-softmax to get the actual log-probability
-        # vectors.
-        start_log_probs = nn.functional.log_softmax(start_logits, dim=1)
-        end_log_probs = nn.functional.log_softmax(end_logits, dim=1)
-        '''
-
         return relevance_score
 # -------------------------- ändern -----------------------------------
     @classmethod
