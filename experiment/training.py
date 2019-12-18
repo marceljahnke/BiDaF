@@ -17,10 +17,13 @@ import h5py
 from bidaf import BidafModel
 
 from experiment.checkpointing import *
-from experiment.dataset import load_data, tokenize_data, EpochGen, load_data_passage_ranking
+from experiment.dataset import load_data, tokenize_data, EpochGen
 from experiment.dataset import SymbolEmbSourceNorm
 from experiment.dataset import SymbolEmbSourceText
 from experiment.dataset import symbol_injection
+
+import import_scripts.ms_marco as ms
+import import_scripts.fiqa as fiqa
 
 
 def try_to_resume(force_restart, exp_folder):
@@ -108,16 +111,17 @@ def init_state(config, args):
     #data = "./data/train_v2.1.json"
 
     # --------- load TSVs as pandas data frames
-    path_to_passages = './data/collection.tsv'
-    path_to_queries = './data/queries.train.tsv'
-    path_to_relevance = './data/qrels.train.tsv'
-    passages = pd.read_csv(path_to_passages, sep='\t', names=['pid', 'passage'])
-    print('Loaded Passages')
-    queries = pd.read_csv(path_to_queries, sep='\t', names=['qid', 'query'])
-    print('Loaded Queries')
-    relevance = pd.read_csv(path_to_relevance, sep='\t', names=['qid', 'trec0', 'pid', 'trec1'])
-    print('Loaded Relevances')
-    data = load_data_passage_ranking(passages, queries, relevance)
+
+    # --------- FiQA
+    # path_to_passages = './data/fiqa/FiQA_train_doc_final.tsv'
+    # path_to_queries = './data/fiqa/FiQA_train_question_final.tsv'
+    # path_to_relevance = './data/fiqa/FiQA_train_question_doc_final.tsv'
+
+    # --------- MS MARCO
+    path_to_passages = './data/ms_marco/collection.tsv'
+    path_to_queries = './data/ms_marco/queries.train.tsv'
+    path_to_relevance = './data/ms_marco/qrels.train.tsv'
+    data = ms.load_data(path_to_passages, path_to_queries, path_to_relevance)
     print('Generated positive and negative examples')
     # ---------- done loading data
 
@@ -167,10 +171,10 @@ def train(epoch, model, optimizer, data, args):
     Train for one epoch.
     """
 
-    for batch_id, (qids, passages, queries, answers, _) in enumerate(data):
+    for batch_id, (_, queries, _, passages, relevance) in enumerate(data):
         predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2]) # parameters not final
         #loss = model.get_loss(start_log_probs, end_log_probs, answers[:, 0], answers[:, 1])
-        loss = torch.nn.functional.binary_cross_entropy(predicted_relevance, answers) # predicted_relevance tensor [batch size, 1], answers tensor [batch size, 1] (either 0 or 1)
+        loss = model.get_loss(predicted_relevance, relevance) # ?
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()

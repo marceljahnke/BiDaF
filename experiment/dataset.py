@@ -14,67 +14,6 @@ from pandas import DataFrame
 
 from text_input import rich_tokenize
 
-
-def load_data_passage_ranking(passages: DataFrame, queries: DataFrame, relevance: DataFrame):
-    """
-    Load the data and use it to create one example for a positive and one for
-    a negative query + passage.
-    Code could be shorter. First version contains more code for easier understanding.
-    """
-    np.random.seed(1234)
-
-    # passages = passages.sort_values(by=['pid'], kind='heapsort') # überhaupt nötig oder schon vorsortiert?
-    # queries = queries.sort_values(by=['qid'], kind='heapsort') # beschleunigt zugriff nicht, da Queries geteilt ?
-    relevance = relevance.sort_values(by=['qid', 'pid']) # sort via mergesort (standard for multiple cols)
-
-    relevance_rows = len(relevance.index)
-
-    # rows = number of rows in relevance * 2
-    # columns = qid, query, pid, passage, relevance score
-    # data = np.empty((relevance_rows * 2, 5), dtype=[('qid', np.int), ('query', 'S100'), ('pid', np.int),
-    #                                           ('passage', 'S500'), ('relevance', np.int)])
-    # data = np.rec.array(data)
-    # print(data.dtype)
-    data = []
-
-    i = 0
-    while i < relevance_rows:
-        qid = relevance.iloc[i]['qid']
-        query = queries.loc[queries['qid'] == qid].iloc[0]['query']
-        j = i
-        rel_passages = set()
-        # check all relevant passages for one query before we generate negative example
-        while True:
-            pid = relevance.iloc[j]['pid']
-            passage = passages.iloc[pid]['passage'] # passage ab 0 sortiert (ohne Lücken?)
-            rel_passages.add((pid, passage))
-            j += 1
-            if queries.iloc[j]['qid'] != qid:
-                break
-
-        # update data positive examples
-        for pid, passage in rel_passages:
-            # data row: [qid, query, pid, passage, relevance score]
-            data.append((qid, query, pid, passage, 1))
-            i += 1
-
-        # index i is now at the position of the qid in the relevance table
-
-        # generate negative examples
-        not_rel_passages = np.setdiff1d(passages['pid'].to_numpy(), np.asarray([p[0] for p in rel_passages]))
-        not_rel_passages = np.random.choice(not_rel_passages, len(rel_passages), replace=False)
-        for pid in not_rel_passages:
-            pid = pid
-            passage = passages.iloc[pid]['passage']
-            data.append((qid, query, pid, passage, 0))
-
-    # generate dataframe
-    data = pd.DataFrame(data, columns=['qid', 'query', 'pid', 'passage', 'relevance']) # cheaper to append to list and create dataframe in one go
-
-    #shuffle data (in-place and reset indices, while preventing extra column with old indices)
-    data = data.sample(frac=1).reset_index(drop=True)
-    return data
-
 def load_data(source, span_only, answered_only):
     """
     Load the data, and use it to create example triples.

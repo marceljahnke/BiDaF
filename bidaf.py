@@ -38,12 +38,18 @@ class BidafModel(nn.Module):
                                    bidirectional=True)
         self.attention = AttentionMatrix(self.bidir_hidden_size)
 
+        # idea: create FF network to get relevance score
+        self.fc1 = nn.Linear(4 * self.bidir_hidden_size + self.bidir_hidden_size, 1024)
+        self.fc2 = nn.Linear(1024, 512)
+        self.fc3 = nn.Linear(512, 64)
+        self.fc4 = nn.Linear(64, 1)
+
         #---------- anpassen ---------
         # Second hidden_size is for extractor.
-        self.start_projection = nn.Linear(
-            4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)
-        self.end_projection = nn.Linear(
-            4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)
+        #self.start_projection = nn.Linear(
+        #    4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)
+        #self.end_projection = nn.Linear(
+        #    4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)
         #----------------------------
 
         if dropout and dropout > 0:
@@ -227,6 +233,15 @@ class BidafModel(nn.Module):
         start_projection = self.start_projection(start_input).squeeze(2)
         # Mask
         start_logits = start_projection * p_mask + (p_mask - 1) * 1e20
+
+        # Anpassung:
+        x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
+        x = self.dropout(nn.functional.relu(self.fc2(x)))
+        x = self.dropout(nn.functional.relu(self.fc3(x)))
+        x = self.fc4(x)
+        relevance_score = nn.functional.log_softmax(x, dim=1)
+
+        '''
         # And turns into probabilities
         start_probs = nn.functional.softmax(start_logits, dim=1)
         # And then into representation, as attention.
@@ -258,11 +273,12 @@ class BidafModel(nn.Module):
         # vectors.
         start_log_probs = nn.functional.log_softmax(start_logits, dim=1)
         end_log_probs = nn.functional.log_softmax(end_logits, dim=1)
+        '''
 
-        return start_log_probs, end_log_probs
+        return relevance_score
 # -------------------------- ändern -----------------------------------
     @classmethod
-    def get_loss(cls, start_log_probs, end_log_probs, starts, ends):
+    def get_loss(cls, predicted_relevance, relevance):
         """
         Get the loss, $-\log P(s|p,q)P(e|p,q)$.
         The start and end labels are expected to be in span format,
@@ -271,9 +287,8 @@ class BidafModel(nn.Module):
 
         # Subtracts 1 from the end points, to get the exact indices, not 1
         # after the end.
-        loss = nll_loss(start_log_probs, starts) + \
-               nll_loss(end_log_probs, ends - 1)
-        return loss
+        #loss = nll_loss(start_log_probs, starts) + nll_loss(end_log_probs, ends - 1)
+        return torch.nn.functional.binary_cross_entropy(predicted_relevance, relevance) # ?
 
     @classmethod
     def get_best_span(cls, start_log_probs, end_log_probs):
