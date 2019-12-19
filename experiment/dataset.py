@@ -324,7 +324,7 @@ class EpochGen(object):
         """
 
         if self.shuffle:
-            self.data.sample(frac=1).reset_index(drop=True)
+            np.random.shuffle(self.idx)
 
         for start_ind in range(0, self.n_samples - 1, self.batch_size):
             batch_idx = self.idx[start_ind:start_ind+self.batch_size]
