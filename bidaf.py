@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from torch.nn.functional import nll_loss
+from torch.nn.functional import nll_loss, binary_cross_entropy_with_logits
 from torch.autograd import Variable
 import numpy as np
 from highway import *
@@ -38,12 +38,20 @@ class BidafModel(nn.Module):
                                    bidirectional=True)
         self.attention = AttentionMatrix(self.bidir_hidden_size)
 
-        # idea: create FF network to get relevance score
-        self.fc1 = nn.Linear(4 * self.bidir_hidden_size + self.bidir_hidden_size, 1024)
-        self.fc2 = nn.Linear(1024, 512)
-        self.fc3 = nn.Linear(512, 64)
+        self.start_projection = nn.Linear(4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)    #war 1
+
+        self.fc1 = nn.Linear(1, 256)
+        self.fc2 = nn.Linear(256, 256)
+        self.fc3 = nn.Linear(256, 64)
         self.fc4 = nn.Linear(64, 1)
 
+        '''''
+        #hier startprojextion
+        # idea: create FF network to get relevance score
+        self.fc1 = nn.Linear(1024, 512)
+        self.fc2 = nn.Linear(512, 64)
+        self.fc3 = nn.Linear(64, 1)
+        '''
         #---------- anpassen ---------
         # Second hidden_size is for extractor.
         #self.start_projection = nn.Linear(
@@ -222,7 +230,7 @@ class BidafModel(nn.Module):
             enc_passage * question_in_passage,
             enc_passage * passage_in_question],
             dim=2)
-        extracted = self.dropout(self._pack_and_unpack_lstm(
+        extracted = self.dropout(self._pack_and_unpack_lstm(#crasht mit cuda
             merged_passage, p_lengths, self.extractor))
 # ------------------ ändern ---------------------------
         # Use the features to get the start point probability vectors.
@@ -231,17 +239,30 @@ class BidafModel(nn.Module):
             torch.cat([merged_passage, extracted], dim=2))
         # [b, p_num_tokens, 4*h] -> [b, n, 1] -> [b, n]
         start_projection = self.start_projection(start_input).squeeze(2)
-        # Mask
+        print("start_projection: ", start_projection.size())
         start_logits = start_projection * p_mask + (p_mask - 1) * 1e20
+        print("start_logits: ", start_logits.size())
 
+        # full random try
+        start_prob = torch.sum(start_logits, dim=1).view(batch_size, 1) # [b x 1], column contains sum of all start_logits for each passage
+        # end full random
+
+        # Mask
+
+        #start_prob = nn.functional.log_softmax(start_logits, dim=1)
+        #print("start_prob: ", start_prob.size())
+        x = self.dropout(nn.functional.relu(self.fc1(start_prob)))
+        x = self.dropout(nn.functional.relu(self.fc2(x)))
+        x = self.dropout(nn.functional.relu(self.fc3(x)))
+        relevance_score = nn.functional.sigmoid(self.fc4(x))
+        '''''
         # Anpassung:
         x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
         x = self.dropout(nn.functional.relu(self.fc2(x)))
-        x = self.dropout(nn.functional.relu(self.fc3(x)))
-        x = self.fc4(x)
+        x = self.fc3(x)
         relevance_score = nn.functional.log_softmax(x, dim=1)
-
-        return relevance_score
+        '''
+        return relevance_score.squeeze() # [b x 1] -> [b]
 # -------------------------- ändern -----------------------------------
     @classmethod
     def get_loss(cls, predicted_relevance, relevance):
@@ -250,11 +271,13 @@ class BidafModel(nn.Module):
         The start and end labels are expected to be in span format,
         so that text[start:end] is the answer.
         """
-
+        print("size of predicted: ", predicted_relevance.size())
+        print("size of actual: ", relevance.size())
         # Subtracts 1 from the end points, to get the exact indices, not 1
         # after the end.
-        #loss = nll_loss(start_log_probs, starts) + nll_loss(end_log_probs, ends - 1)
-        return torch.nn.functional.binary_cross_entropy(predicted_relevance, relevance) # ?
+        # loss = nll_loss(start_log_probs, starts) + nll_loss(end_log_probs, ends - 1)
+        loss = binary_cross_entropy_with_logits(predicted_relevance, relevance.float())
+        return loss
 
     @classmethod
     def get_best_span(cls, start_log_probs, end_log_probs):
