@@ -197,7 +197,7 @@ def main():
                            help="Text file containing pre-trained "
                            "word representations.")
     argparser.add_argument("--cuda",
-                           type=bool, default=torch.cuda.is_available(),
+                           type=bool, default=False,    #torch.cuda.is_available()
                            help="Use GPU if possible")
     argparser.add_argument("--use_covariance",
                            action="store_true",
@@ -206,13 +206,13 @@ def main():
                            "when generating random word representations.")
 
     args = argparser.parse_args()
-    config_filepath = "./experiment/config.yaml" #os.path.join(args.exp_folder, 'config.yaml')
+    config_filepath = os.path.join(args.exp_folder, 'config.yaml')
     with open(config_filepath) as f:
         config = yaml.load(f)
 
 
     checkpoint, training_state, epoch = try_to_resume(
-            args.force_restart, args.exp_folder)
+            True, args.exp_folder)
 
     if checkpoint:
         print('Resuming training...')
