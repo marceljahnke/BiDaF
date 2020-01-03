@@ -18,6 +18,8 @@ from experiment.dataset import SymbolEmbSourceNorm
 from experiment.dataset import SymbolEmbSourceText
 from experiment.dataset import symbol_injection
 
+from import_scripts import fiqa, ms_marco
+
 regex_drop_char = re.compile('[^a-z0-9\s]+')
 regex_multi_space = re.compile('\s+')
 
@@ -44,8 +46,24 @@ def reload_state(checkpoint, config, args):
     len_tok_voc = len(token_to_id)
     len_char_voc = len(char_to_id)
 
-    with open(args.data) as f_o:
-        data, _ = load_data(json.load(f_o), span_only=True, answered_only=True)
+    #with open(args.data) as f_o:
+    #    data, _ = load_data(json.load(f_o), span_only=True, answered_only=True)
+
+    # --------- load TSVs as pandas data frames
+    # --------- FiQA TODO: training - > test
+    path_to_passages = './data/fiqa/FiQA_train_doc_final.tsv'
+    path_to_queries = './data/fiqa/FiQA_train_question_final.tsv'
+    path_to_relevance = './data/fiqa/FiQA_train_question_doc_final.tsv'
+    data = fiqa.load_data(path_to_passages, path_to_queries, path_to_relevance)
+    # --------- MS MARCO
+    # path_to_passages = './data/ms_marco/collection.tsv'
+    # path_to_queries = './data/ms_marco/queries.train.tsv'
+    # path_to_relevance = './data/ms_marco/qrels.train.tsv'
+    # data = ms_marco.load_data(path_to_passages, path_to_queries, path_to_relevance)
+    print('Generated positive and negative examples')
+    # ---------- done loading data
+
+    print('Tokenizing data...')
     data = tokenize_data(data, token_to_id, char_to_id)
 
     id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
@@ -123,18 +141,14 @@ def predict(model, data):
     """
     Train for one epoch.
     """
-    for batch_id, (qids, passages, queries, _, mappings) in enumerate(data):
-        start_log_probs, end_log_probs = model(
-            passages[:2], passages[2],
-            queries[:2], queries[2])
-        predictions = model.get_best_span(start_log_probs, end_log_probs)
-        predictions = predictions.cpu()
+    #for batch_id, (qids, passages, queries, _, mappings) in enumerate(data):
+    for batch_id, (qids, passages, queries, relevances, mappings) in enumerate(data):
+        predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
+        #predictions = model.get_best_span(start_log_probs, end_log_probs)
+        predictions = predicted_relevance.cpu()
         passages = passages[0].cpu().data
-        for qid, mapping, tokens, pred in zip(
-                qids, mappings, passages, predictions):
-            yield (qid, tokens[pred[0]:pred[1]],
-                   mapping[pred[0], 0],
-                   mapping[pred[1] - 1, 1])
+        for qid, query, mapping, tokens, pred, rel in zip(qids, queries, mappings, passages, predictions, relevances):
+            yield (qid, query, tokens, pred, rel)
     return
 
 
@@ -179,20 +193,28 @@ def main():
     if torch.cuda.is_available() and args.cuda:
         data.tensor_type = torch.cuda.LongTensor
     qid2candidate = {}
-    for qid, toks, start, end in predict(model, data):
+    #for qid, toks, start, end in predict(model, data):
+    for qid, query, tokens, pred, rel in predict(model, data):
+        '''
         toks = regex_multi_space.sub(' ', regex_drop_char.sub(' ', ' '.join(
             id_to_token[int(tok)] for tok in toks).lower())).strip()
         # print(repr(qid), repr(toks), start, end, file=f_o)
         output = '{\"query_id\": ' + qid + ',\"answers\":[ \"' + toks + '\"]}'
+        '''
+        output = "{\"query_id\": " + qid + ", \"query\": " + query + ", \"passage\": [\"" + tokens+ "\"], \"predicted relevance\":  " + pred + ", \"actual relevance\": " + rel + "}"
         if qid not in qid2candidate:
             qid2candidate[qid] = []
         qid2candidate[qid].append(json.dumps(json.loads(output)))
-    with open(args.dest, 'w') as f_o:
-        for qid in qid2candidate:
-            # For our leaderboard model we build another model that predicted which passage would be most likley to produce the output. for simplicity we just pick one at random.
-            pick = random.randint(0, len(qid2candidate[qid]) - 1)
-            f_o.write(qid2candidate[qid][pick])
-            f_o.write('\n')
+
+    result = {'result': qid2candidate}
+    with open(args.exp_folder + 'predictions.txt', 'w') as file:
+        file.write(json.dumps(result))
+
+    #with open(args.dest, 'w') as f_o:
+    #    for qid in qid2candidate:
+    #        pick = random.randint(0, len(qid2candidate[qid]) - 1)
+    #        f_o.write(qid2candidate[qid][pick])
+    #        f_o.write('\n')
     return
 
 

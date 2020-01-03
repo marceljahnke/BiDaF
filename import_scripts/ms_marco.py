@@ -44,7 +44,7 @@ def load_data(path_to_passages: str, path_to_queries: str, path_to_relevance: st
         for pid, passage in rel_passages:
             # data row: [qid, query, pid, passage, relevance score]
             # data.append((qid, query, pid, passage, 1))
-            data.append((query, passage, 1))
+            data.append((qid, query, passage, 1))
             i += 1
 
         # index i is now at the position of the qid in the relevance table
@@ -56,10 +56,10 @@ def load_data(path_to_passages: str, path_to_queries: str, path_to_relevance: st
             pid = pid
             passage = passages.iloc[pid]['passage']
             # data.append((qid, query, pid, passage, 0))
-            data.append((query, passage, 0))
+            data.append((qid, query, passage, 0))
 
     # generate dataframe
-    data = pd.DataFrame(data, columns=['query', 'passage',
+    data = pd.DataFrame(data, columns=['qid', 'query', 'passage',
                                        'relevance'])  # cheaper to append to list and create data frame in one go
 
     print(data)

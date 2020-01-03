@@ -59,7 +59,7 @@ def load_data(path_to_passages: str, path_to_queries: str, path_to_relevance: st
 
         # update data positive examples
         for pid, passage in rel_passages:
-            data.append((query, passage, 1))
+            data.append((qid, query, passage, 1))
             i += 1
 
         # index i is now at the position of the qid in the relevance table
@@ -70,16 +70,14 @@ def load_data(path_to_passages: str, path_to_queries: str, path_to_relevance: st
         for pid in not_rel_passages:
             pid = pid
             passage = passages.loc[passages['pid'] == pid].iloc[0]['passage']
-            data.append((query, passage, 0))
+            data.append((qid, query, passage, 0))
 
     # generate dataframe
-    data = pd.DataFrame(data, columns=['query', 'passage',
+    data = pd.DataFrame(data, columns=['qid', 'query', 'passage',
                                        'relevance'])  # cheaper to append to list and create dataframe in one go
 
     if data.isnull().values.any():
         print("contains nan values")
-    else:
-        print("no nan values")
     # shuffle data (in-place and reset indices, while preventing extra column with old indices)
     # data.sample(frac=1).reset_index(drop=True)
     return data

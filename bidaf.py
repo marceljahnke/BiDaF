@@ -239,9 +239,9 @@ class BidafModel(nn.Module):
             torch.cat([merged_passage, extracted], dim=2))
         # [b, p_num_tokens, 4*h] -> [b, n, 1] -> [b, n]
         start_projection = self.start_projection(start_input).squeeze(2)
-        print("start_projection: ", start_projection.size())
+        #print("start_projection: ", start_projection.size())
         start_logits = start_projection * p_mask + (p_mask - 1) * 1e20
-        print("start_logits: ", start_logits.size())
+        #print("start_logits: ", start_logits.size())
 
         # full random try
         start_prob = torch.sum(start_logits, dim=1).view(batch_size, 1) # [b x 1], column contains sum of all start_logits for each passage

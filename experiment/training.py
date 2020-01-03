@@ -171,7 +171,7 @@ def train(epoch, model, optimizer, data, args):
     Train for one epoch.
     """
 
-    for batch_id, (passages, queries, relevances, _) in enumerate(data):
+    for batch_id, (_, passages, queries, relevances, _) in enumerate(data):
         predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2]) # parameters not final
         #loss = model.get_loss(start_log_probs, end_log_probs, answers[:, 0], answers[:, 1])
         loss = model.get_loss(predicted_relevance, relevances) # ?
@@ -212,7 +212,7 @@ def main():
 
 
     checkpoint, training_state, epoch = try_to_resume(
-            True, args.exp_folder)
+            args.force_restart, args.exp_folder)
 
     if checkpoint:
         print('Resuming training...')
