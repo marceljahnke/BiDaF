@@ -197,7 +197,7 @@ def main():
                            help="Text file containing pre-trained "
                            "word representations.")
     argparser.add_argument("--cuda",
-                           type=bool, default=False,    #torch.cuda.is_available()
+                           type=bool, default=torch.cuda.is_available(),    #torch.cuda.is_available()
                            help="Use GPU if possible")
     argparser.add_argument("--use_covariance",
                            action="store_true",
