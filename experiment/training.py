@@ -16,7 +16,7 @@ import torch.optim as optim
 import h5py
 from bidaf import BidafModel
 
-from experiment.checkpointing import *
+import experiment.checkpointing as checkpointing
 from experiment.dataset import load_data, tokenize_data, EpochGen
 from experiment.dataset import SymbolEmbSourceNorm
 from experiment.dataset import SymbolEmbSourceText
@@ -223,8 +223,8 @@ def main():
         model, id_to_token, id_to_char, optimizer, data = init_state(
             config, args)
         checkpoint = h5py.File(os.path.join(args.exp_folder, 'checkpoint'))
-        save_vocab(checkpoint, 'vocab', id_to_token)
-        save_vocab(checkpoint, 'c_vocab', id_to_char)
+        checkpointing.save_vocab(checkpoint, 'vocab', id_to_token)
+        checkpointing.save_vocab(checkpoint, 'c_vocab', id_to_char)
 
     if torch.cuda.is_available() and args.cuda:
         data.tensor_type = torch.cuda.LongTensor
@@ -238,7 +238,7 @@ def main():
     for epoch in epochs:
         print('Starting epoch', epoch)
         train(epoch, model, optimizer, data, args)
-        checkpoint(model, epoch, optimizer,
+        checkpointing.checkpoint(model, epoch, optimizer,
                    checkpoint, args.exp_folder)
 
     return
