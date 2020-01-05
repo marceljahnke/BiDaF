@@ -46,7 +46,8 @@ class BidafModel(nn.Module):
         self.fc3 = nn.Linear(256, 64)
         self.fc4 = nn.Linear(64, 1)
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu") # hotfix for cuda error
 
         '''''
         #hier startprojextion
@@ -426,8 +427,9 @@ class BidafModel(nn.Module):
         """
         model_vocab = checkpoint['vocab']
         model_c_vocab = checkpoint['c_vocab']
-        max_passage_length = checkpoint['max_passage_length']
-
+        max_passage_length = checkpoint['max_passage_length'].value
+        #print(f"type of max_passage_length: {type(max_passage_length)}, value: {max_passage_length}")
+        
         model_vocab = {id_: tok for id_, tok in enumerate(model_vocab)}
         model_c_vocab = {id_: tok for id_, tok in enumerate(model_c_vocab)}
 
