@@ -169,7 +169,7 @@ def main():
                            type=int, default=64,
                            help="Batch size to use")
     argparser.add_argument("--cuda",
-                           type=bool, default=torch.cuda.is_available(),
+                           type=bool, default=False,
                            help="Use GPU if possible")
     argparser.add_argument("--use_covariance",
                            action="store_true",
@@ -196,14 +196,19 @@ def main():
         data.tensor_type = torch.cuda.LongTensor
     qid2candidate = {}
     #for qid, toks, start, end in predict(model, data):
-    for qid, query, tokens, pred, rel in predict(model, data):
+    for qid, query, toks, pred, rel in predict(model, data):
         '''
         toks = regex_multi_space.sub(' ', regex_drop_char.sub(' ', ' '.join(
             id_to_token[int(tok)] for tok in toks).lower())).strip()
         # print(repr(qid), repr(toks), start, end, file=f_o)
         output = '{\"query_id\": ' + qid + ',\"answers\":[ \"' + toks + '\"]}'
         '''
-        output = "{\"query_id\": " + str(qid) + ", \"query\": " + query + ", \"passage\": [\"" + tokens + "\"], \"predicted relevance\":  " + str(pred) + ", \"actual relevance\": " + str(rel) + "}"
+        #print(f"Types of:\nqid: {type(qid)}\nquery: {type(query)}\ntokens; {type(tokens)}\npred: {type(pred)}\nrel: {type(rel)}")
+        toks = regex_multi_space.sub(' ', regex_drop_char.sub(' ', ' '.join(id_to_token[int(tok)] for tok in toks).lower())).strip()
+        #query = regex_multi_space.sub(' ', regex_drop_char.sub(' ', ' '.join(id_to_token[int(q)] for q in query).lower())).strip()
+        #output = "{\"query_id\": " + str(qid) + ", \"passage\": [\"" + toks + "\"], \"predicted relevance\":  " + str(pred.item()) + ", \"actual relevance\": " + str(rel.item()) + "}"
+        output = "{\"query_id\": " + str(qid) + ", \"p_rel\": " + str(pred.item()) + ", \"a_rel\": " + str(rel.item()) + "}"
+        print(output)
         if qid not in qid2candidate:
             qid2candidate[qid] = []
         qid2candidate[qid].append(json.dumps(json.loads(output)))
