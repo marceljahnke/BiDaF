@@ -162,7 +162,7 @@ def init_state(config, args):
     # Char embeddings are already random, so we don't need to update them.
 
     if torch.cuda.is_available() and args.cuda:
-        if torch.cuda.device_count() > 1:
+        if False and torch.cuda.device_count() > 1: # does not work, yet
             model = torch.nn.DataParallel(model)
         else:
             model.cuda()
@@ -232,6 +232,7 @@ def main():
         checkpoint = h5py.File(os.path.join(args.exp_folder, 'checkpoint'))
         checkpointing.save_vocab(checkpoint, 'vocab', id_to_token)
         checkpointing.save_vocab(checkpoint, 'c_vocab', id_to_char)
+        # save max passage length here! not in every epoch
 
     if torch.cuda.is_available() and args.cuda:
         data.tensor_type = torch.cuda.LongTensor
