@@ -162,7 +162,11 @@ def init_state(config, args):
     # Char embeddings are already random, so we don't need to update them.
 
     if torch.cuda.is_available() and args.cuda:
-        model.cuda()
+        if torch.cuda.device_count() > 1:
+            model = torch.nn.DataParallel(model)
+        else:
+            model.cuda()
+
     model.train()
 
     optimizer = get_optimizer(model, config, state=None)
