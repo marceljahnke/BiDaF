@@ -123,7 +123,8 @@ def init_state(config, args):
     # path_to_relevance = './data/ms_marco/qrels.train.tsv'
     # data = ms.load_data(path_to_passages, path_to_queries, path_to_relevance)
     # --------------- Split data into training and test data
-    data = data.iloc[:int(len(data.index) * 0.8)] # training
+    max_passage_length = data.passage.map(len).max()
+    data = data.iloc[:int(len(data.index) * 0.8)] # training data
     print('Generated positive and negative examples: ', len(data.index))
     # ---------- done loading data
 
@@ -137,7 +138,7 @@ def init_state(config, args):
     id_to_char = {id_: char for char, id_ in char_to_id.items()}
 
     print('Creating model...')
-    model = BidafModel.from_config(config['bidaf'], id_to_token, id_to_char)
+    model = BidafModel.from_config(config['bidaf'], id_to_token, id_to_char, max_p=max_passage_length)
 
     if args.word_rep:
         print('Loading pre-trained embeddings...')

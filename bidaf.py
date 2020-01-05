@@ -12,11 +12,12 @@ class BidafModel(nn.Module):
     Bidirectional attention flow model for passage relevance ranking
     """
 
-    def __init__(self, embedder, num_highways, num_lstm, hidden_size, dropout):
+    def __init__(self, embedder, num_highways, num_lstm, hidden_size, dropout, max_p_length=None):
         super(BidafModel, self).__init__()
         self.hidden_size = hidden_size
         self.bidir_hidden_size = 2 * hidden_size
         self.embedder = embedder
+        self.max_p_length = max_p_length
         self.highways = Highways(embedder.output_dim, num_highways)
         self.seq_encoder = nn.LSTM(embedder.output_dim,
                                    hidden_size,
@@ -40,7 +41,7 @@ class BidafModel(nn.Module):
 
         self.start_projection = nn.Linear(4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)    #war 1
 
-        self.fc1 = nn.Linear(1, 256)
+        self.fc1 = nn.Linear(self.max_p_length, 256)
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, 64)
         self.fc4 = nn.Linear(64, 1)
@@ -241,17 +242,21 @@ class BidafModel(nn.Module):
         start_projection = self.start_projection(start_input).squeeze(2)
         #print("start_projection: ", start_projection.size())
         start_logits = start_projection * p_mask + (p_mask - 1) * 1e20
+        # for all batches that dont contains the pasage with the maximal length -> pad them with -1e20 to maximal length
+        if p_lengths < self.max_p_length:
+            ext_tensor = torch.ones((batch_size, self.max_p_length - p_lengths)) * -1e20
+            start_logits = torch.cat([start_logits, ext_tensor], dim=1)
         #print("start_logits: ", start_logits.size())
 
         # full random try
-        start_prob = torch.sum(start_logits, dim=1).view(batch_size, 1) # [b x 1], column contains sum of all start_logits for each passage
+        # start_prob = torch.sum(start_logits, dim=1).view(batch_size, 1) # [b x 1], column contains sum of all start_logits for each passage
         # end full random
 
         # Mask
 
         #start_prob = nn.functional.log_softmax(start_logits, dim=1)
         #print("start_prob: ", start_prob.size())
-        x = self.dropout(nn.functional.relu(self.fc1(start_prob)))
+        x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
         x = self.dropout(nn.functional.relu(self.fc2(x)))
         x = self.dropout(nn.functional.relu(self.fc3(x)))
         relevance_score = nn.functional.sigmoid(self.fc4(x))
@@ -386,15 +391,15 @@ class BidafModel(nn.Module):
         return args
 
     @classmethod
-    def from_config(cls, config, vocab, c_vocab):
+    def from_config(cls, config, vocab, c_vocab, max_p=None):
         """
         Create a model using the model description in the configuration file.
         """
-        model = cls(*cls._parse_config(config, vocab, c_vocab))
+        model = cls(*cls._parse_config(config, vocab, c_vocab), max_p_length=max_p)
         return model
 
     @classmethod
-    def from_checkpoint(cls, config, checkpoint):
+    def from_checkpoint(cls, config, checkpoint, max_p=None):
         """
         Load a model, on CPU and eval mode.
 
@@ -425,7 +430,8 @@ class BidafModel(nn.Module):
         model = cls.from_config(
             config,
             model_vocab,
-            model_c_vocab)
+            model_c_vocab,
+            max_p)
 
         model.load_state_dict({
             name: torch.from_numpy(np.array(val))

@@ -36,19 +36,6 @@ def reload_state(checkpoint, config, args):
     """
     Reload state before predicting.
     """
-    print('Loading Model...')
-    model, id_to_token, id_to_char = BidafModel.from_checkpoint(
-        config['bidaf'], checkpoint)
-
-    token_to_id = {tok: id_ for id_, tok in id_to_token.items()}
-    char_to_id = {char: id_ for id_, char in id_to_char.items()}
-
-    len_tok_voc = len(token_to_id)
-    len_char_voc = len(char_to_id)
-
-    #with open(args.data) as f_o:
-    #    data, _ = load_data(json.load(f_o), span_only=True, answered_only=True)
-
     # --------- load TSVs as pandas data frames
     # --------- FiQA
     path_to_passages = './data/fiqa/FiQA_train_doc_final.tsv'
@@ -61,9 +48,23 @@ def reload_state(checkpoint, config, args):
     # path_to_relevance = './data/ms_marco/qrels.train.tsv'
     # data = ms_marco.load_data(path_to_passages, path_to_queries, path_to_relevance)
     # --------------- Split data into training and test data
-    data = data.iloc[int(len(data.index) * 0.8):]  # test
+    max_passage_length = data.passage.map(len).max()
+    data = data.iloc[int(len(data.index) * 0.8):]  # test data
     print('Generated positive and negative examples: ', len(data.index))
     # ---------- done loading data
+
+    print('Loading Model...')
+    model, id_to_token, id_to_char = BidafModel.from_checkpoint(
+        config['bidaf'], checkpoint, max_p=max_passage_length)
+
+    token_to_id = {tok: id_ for id_, tok in id_to_token.items()}
+    char_to_id = {char: id_ for id_, char in id_to_char.items()}
+
+    len_tok_voc = len(token_to_id)
+    len_char_voc = len(char_to_id)
+
+    #with open(args.data) as f_o:
+    #    data, _ = load_data(json.load(f_o), span_only=True, answered_only=True)
 
     print('Tokenizing data...')
     data = tokenize_data(data, token_to_id, char_to_id)
@@ -78,7 +79,7 @@ def reload_state(checkpoint, config, args):
                    if id_ >= len_tok_voc)
 
         if args.word_rep:
-            with open(args.word_rep) as f_o:
+            with open(args.word_rep) as f_o: # add  encoding='utf-8' on windows systems
                 pre_trained = SymbolEmbSourceText(
                     f_o, need)
         else:
