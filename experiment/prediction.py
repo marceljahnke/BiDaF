@@ -50,7 +50,7 @@ def reload_state(checkpoint, config, args):
     #    data, _ = load_data(json.load(f_o), span_only=True, answered_only=True)
 
     # --------- load TSVs as pandas data frames
-    # --------- FiQA TODO: training - > test
+    # --------- FiQA
     path_to_passages = './data/fiqa/FiQA_train_doc_final.tsv'
     path_to_queries = './data/fiqa/FiQA_train_question_final.tsv'
     path_to_relevance = './data/fiqa/FiQA_train_question_doc_final.tsv'
@@ -60,7 +60,9 @@ def reload_state(checkpoint, config, args):
     # path_to_queries = './data/ms_marco/queries.train.tsv'
     # path_to_relevance = './data/ms_marco/qrels.train.tsv'
     # data = ms_marco.load_data(path_to_passages, path_to_queries, path_to_relevance)
-    print('Generated positive and negative examples')
+    # --------------- Split data into training and test data
+    data = data.iloc[int(len(data.index) * 0.8):]  # test
+    print('Generated positive and negative examples: ', len(data.index))
     # ---------- done loading data
 
     print('Tokenizing data...')
@@ -215,6 +217,7 @@ def main():
     #        pick = random.randint(0, len(qid2candidate[qid]) - 1)
     #        f_o.write(qid2candidate[qid][pick])
     #        f_o.write('\n')
+    print('Prediction done')
     return
 
 

@@ -122,7 +122,9 @@ def init_state(config, args):
     # path_to_queries = './data/ms_marco/queries.train.tsv'
     # path_to_relevance = './data/ms_marco/qrels.train.tsv'
     # data = ms.load_data(path_to_passages, path_to_queries, path_to_relevance)
-    print('Generated positive and negative examples')
+    # --------------- Split data into training and test data
+    data = data.iloc[:int(len(data.index) * 0.8)] # training
+    print('Generated positive and negative examples: ', len(data.index))
     # ---------- done loading data
 
     #with open(data, encoding='utf-8') as f_o:
@@ -240,7 +242,7 @@ def main():
         train(epoch, model, optimizer, data, args)
         checkpointing.checkpoint(model, epoch, optimizer,
                    checkpoint, args.exp_folder)
-
+    print('Training done')
     return
 
 
