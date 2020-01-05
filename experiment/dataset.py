@@ -107,6 +107,7 @@ def tokenize_data(data, token_to_id, char_to_id, limit=None):
     Answer indexes are start:stop range of tokens.
     """
     tokenized = []
+    max_p_tokens_num = 0
     for _, row in data.iterrows():
         q_tokens, q_chars, _, _, _ = \
             rich_tokenize(row['query'], token_to_id, char_to_id, update=True)
@@ -118,6 +119,9 @@ def tokenize_data(data, token_to_id, char_to_id, limit=None):
             # Passage is too long, but it can be trimmed.
             p_tokens = p_tokens[:limit]
 
+        if len(p_tokens) > max_p_tokens_num:
+            max_p_tokens_num = len(p_tokens)
+
         tokenized.append(
             (
                 row['qid'],
@@ -127,7 +131,7 @@ def tokenize_data(data, token_to_id, char_to_id, limit=None):
                 mapping
             )
         )
-    return tokenized
+    return tokenized, max_p_tokens_num
 
 
 def symbol_injection(id_to_symb, start_at, embedding,

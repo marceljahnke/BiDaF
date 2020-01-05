@@ -65,14 +65,14 @@ def reload_state(checkpoint, training_state, config, args):
         data, _ = load_data(json.load(f_o),
                             span_only=True, answered_only=True)
     limit_passage = config.get('training', {}).get('limit')
-    data = tokenize_data(data, token_to_id, char_to_id, limit_passage)
+    data, max_passage_length = tokenize_data(data, token_to_id, char_to_id, limit_passage)
 
     data = get_loader(data, config)
 
     assert len(token_to_id) == len_tok_voc
     assert len(char_to_id) == len_char_voc
 
-    return model, id_to_token, id_to_char, optimizer, data
+    return model, id_to_token, id_to_char, optimizer, data, max_passage_length
 
 
 def get_optimizer(model, config, state):
@@ -113,9 +113,9 @@ def init_state(config, args):
     # --------- load TSVs as pandas data frames
 
     # --------- FiQA
-    path_to_passages = './data/fiqa/FiQA_train_doc_final.tsv'
-    path_to_queries = './data/fiqa/FiQA_train_question_final.tsv'
-    path_to_relevance = './data/fiqa/FiQA_train_question_doc_final.tsv'
+    path_to_passages = '../data/fiqa/FiQA_train_doc_final.tsv'
+    path_to_queries = '../data/fiqa/FiQA_train_question_final.tsv'
+    path_to_relevance = '../data/fiqa/FiQA_train_question_doc_final.tsv'
     data = fiqa.load_data(path_to_passages, path_to_queries, path_to_relevance)
     # --------- MS MARCO
     # path_to_passages = './data/ms_marco/collection.tsv'
@@ -123,7 +123,7 @@ def init_state(config, args):
     # path_to_relevance = './data/ms_marco/qrels.train.tsv'
     # data = ms.load_data(path_to_passages, path_to_queries, path_to_relevance)
     # --------------- Split data into training and test data
-    max_passage_length = data.passage.map(len).max()
+    # max_passage_length = data.passage.map(len).max()
     data = data.iloc[:int(len(data.index) * 0.8)] # training data
     print('Generated positive and negative examples: ', len(data.index))
     # ---------- done loading data
@@ -131,7 +131,7 @@ def init_state(config, args):
     #with open(data, encoding='utf-8') as f_o:
     #    data, _ = load_data(json.load(f_o), span_only=True, answered_only=True)
     print('Tokenizing data...')
-    data = tokenize_data(data, token_to_id, char_to_id)
+    data, max_passage_length = tokenize_data(data, token_to_id, char_to_id)
     data = get_loader(data, config)
 
     id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
@@ -166,7 +166,7 @@ def init_state(config, args):
     model.train()
 
     optimizer = get_optimizer(model, config, state=None)
-    return model, id_to_token, id_to_char, optimizer, data
+    return model, id_to_token, id_to_char, optimizer, data, max_passage_length
 
 
 def train(epoch, model, optimizer, data, args):
@@ -200,7 +200,7 @@ def main():
                            help="Text file containing pre-trained "
                            "word representations.")
     argparser.add_argument("--cuda",
-                           type=bool, default=torch.cuda.is_available(),    #torch.cuda.is_available()
+                           type=bool, default=False,    #torch.cuda.is_available()
                            help="Use GPU if possible")
     argparser.add_argument("--use_covariance",
                            action="store_true",
@@ -219,11 +219,11 @@ def main():
 
     if checkpoint:
         print('Resuming training...')
-        model, id_to_token, id_to_char, optimizer, data = reload_state(
+        model, id_to_token, id_to_char, optimizer, data, max_passage_length = reload_state(
             checkpoint, training_state, config, args)
     else:
         print('Preparing to train...')
-        model, id_to_token, id_to_char, optimizer, data = init_state(
+        model, id_to_token, id_to_char, optimizer, data, max_passage_length = init_state(
             config, args)
         checkpoint = h5py.File(os.path.join(args.exp_folder, 'checkpoint'))
         checkpointing.save_vocab(checkpoint, 'vocab', id_to_token)
@@ -242,7 +242,7 @@ def main():
         print('Starting epoch', epoch)
         train(epoch, model, optimizer, data, args)
         checkpointing.checkpoint(model, epoch, optimizer,
-                   checkpoint, args.exp_folder)
+                   checkpoint, args.exp_folder, max_passage_length)
     print('Training done')
     return
 

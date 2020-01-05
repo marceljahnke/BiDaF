@@ -243,9 +243,9 @@ class BidafModel(nn.Module):
         #print("start_projection: ", start_projection.size())
         start_logits = start_projection * p_mask + (p_mask - 1) * 1e20
         # for all batches that dont contains the pasage with the maximal length -> pad them with -1e20 to maximal length
-        if p_lengths < self.max_p_length:
-            ext_tensor = torch.ones((batch_size, self.max_p_length - p_lengths)) * -1e20
-            start_logits = torch.cat([start_logits, ext_tensor], dim=1)
+        if p_num_tokens < self.max_p_length:
+                ext_tensor = torch.ones((batch_size, self.max_p_length - p_num_tokens)) * -1e20
+                start_logits = torch.cat([start_logits, ext_tensor], dim=1)
         #print("start_logits: ", start_logits.size())
 
         # full random try
@@ -399,7 +399,7 @@ class BidafModel(nn.Module):
         return model
 
     @classmethod
-    def from_checkpoint(cls, config, checkpoint, max_p=None):
+    def from_checkpoint(cls, config, checkpoint):
         """
         Load a model, on CPU and eval mode.
 
@@ -423,6 +423,7 @@ class BidafModel(nn.Module):
         """
         model_vocab = checkpoint['vocab']
         model_c_vocab = checkpoint['c_vocab']
+        max_passage_length = checkpoint['max_passage_length']
 
         model_vocab = {id_: tok for id_, tok in enumerate(model_vocab)}
         model_c_vocab = {id_: tok for id_, tok in enumerate(model_c_vocab)}
@@ -431,7 +432,7 @@ class BidafModel(nn.Module):
             config,
             model_vocab,
             model_c_vocab,
-            max_p)
+            max_passage_length)
 
         model.load_state_dict({
             name: torch.from_numpy(np.array(val))
