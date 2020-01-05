@@ -46,6 +46,8 @@ class BidafModel(nn.Module):
         self.fc3 = nn.Linear(256, 64)
         self.fc4 = nn.Linear(64, 1)
 
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         '''''
         #hier startprojextion
         # idea: create FF network to get relevance score
@@ -245,6 +247,7 @@ class BidafModel(nn.Module):
         # for all batches that dont contains the pasage with the maximal length -> pad them with -1e20 to maximal length
         if p_num_tokens < self.max_p_length:
                 ext_tensor = torch.ones((batch_size, self.max_p_length - p_num_tokens)) * -1e20
+                ext_tensor = ext_tensor.to(self.device)
                 start_logits = torch.cat([start_logits, ext_tensor], dim=1)
         #print("start_logits: ", start_logits.size())
 
