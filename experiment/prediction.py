@@ -203,13 +203,13 @@ def main():
         # print(repr(qid), repr(toks), start, end, file=f_o)
         output = '{\"query_id\": ' + qid + ',\"answers\":[ \"' + toks + '\"]}'
         '''
-        output = "{\"query_id\": " + qid + ", \"query\": " + query + ", \"passage\": [\"" + tokens+ "\"], \"predicted relevance\":  " + pred + ", \"actual relevance\": " + rel + "}"
+        output = "{\"query_id\": " + str(qid) + ", \"query\": " + query + ", \"passage\": [\"" + tokens + "\"], \"predicted relevance\":  " + str(pred) + ", \"actual relevance\": " + str(rel) + "}"
         if qid not in qid2candidate:
             qid2candidate[qid] = []
         qid2candidate[qid].append(json.dumps(json.loads(output)))
 
     result = {'result': qid2candidate}
-    with open(args.exp_folder + 'predictions.txt', 'w') as file:
+    with open(args.dest + 'predictions.txt', 'w') as file:
         file.write(json.dumps(result))
 
     #with open(args.dest, 'w') as f_o:
@@ -222,4 +222,5 @@ def main():
 
 
 if __name__ == '__main__':
+    # run with: python experiment/prediction.py --word_rep ./data/glove.840B.300d.txt ./results/ ./data/ ./results/
     main()

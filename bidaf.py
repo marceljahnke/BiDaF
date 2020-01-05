@@ -271,8 +271,8 @@ class BidafModel(nn.Module):
         The start and end labels are expected to be in span format,
         so that text[start:end] is the answer.
         """
-        print("size of predicted: ", predicted_relevance.size())
-        print("size of actual: ", relevance.size())
+        # print("size of predicted: ", predicted_relevance.size())
+        # print("size of actual: ", relevance.size())
         # Subtracts 1 from the end points, to get the exact indices, not 1
         # after the end.
         # loss = nll_loss(start_log_probs, starts) + nll_loss(end_log_probs, ends - 1)
