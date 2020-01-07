@@ -64,8 +64,8 @@ def reload_state(checkpoint, training_state, config, args):
     with open(args.data) as f_o:
         data, _ = load_data(json.load(f_o),
                             span_only=True, answered_only=True)
-    limit_passage = config.get('training', {}).get('limit')
-    data, max_passage_length = tokenize_data(data, token_to_id, char_to_id, limit_passage)
+    #limit_passage = config.get('training', {}).get('limit')
+    data, max_passage_length = tokenize_data(data, token_to_id, char_to_id)
 
     data = get_loader(data, config)
 
