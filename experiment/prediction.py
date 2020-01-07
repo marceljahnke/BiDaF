@@ -43,9 +43,9 @@ def reload_state(checkpoint, config, args):
 
     # --------- load TSVs as pandas data frames
     # --------- FiQA
-    path_to_passages = './data/fiqa/FiQA_train_doc_final.tsv'
-    path_to_queries = './data/fiqa/FiQA_train_question_final.tsv'
-    path_to_relevance = './data/fiqa/FiQA_train_question_doc_final.tsv'
+    path_to_passages = '../data/fiqa/FiQA_train_doc_final.tsv'
+    path_to_queries = '../data/fiqa/FiQA_train_question_final.tsv'
+    path_to_relevance = '../data/fiqa/FiQA_train_question_doc_final.tsv'
     data = fiqa.load_data(path_to_passages, path_to_queries, path_to_relevance)
     # --------- MS MARCO
     # path_to_passages = './data/ms_marco/collection.tsv'
@@ -80,7 +80,7 @@ def reload_state(checkpoint, config, args):
                    if id_ >= len_tok_voc)
 
         if args.word_rep:
-            with open(args.word_rep) as f_o: # add  encoding='utf-8' on windows systems
+            with open(args.word_rep, encoding='utf-8') as f_o: # add  encoding='utf-8' on windows systems
                 pre_trained = SymbolEmbSourceText(
                     f_o, need)
         else:

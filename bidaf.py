@@ -46,8 +46,8 @@ class BidafModel(nn.Module):
         self.fc3 = nn.Linear(256, 64)
         self.fc4 = nn.Linear(64, 1)
 
-        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.device = torch.device("cpu") # hotfix for cuda error
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        #self.device = torch.device("cpu") # hotfix for cuda error
 
         '''''
         #hier startprojextion
@@ -260,6 +260,7 @@ class BidafModel(nn.Module):
 
         #start_prob = nn.functional.log_softmax(start_logits, dim=1)
         #print("start_prob: ", start_prob.size())
+        start_logits = nn.functional.log_softmax(start_logits, dim=1)
         x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
         x = self.dropout(nn.functional.relu(self.fc2(x)))
         x = self.dropout(nn.functional.relu(self.fc3(x)))
@@ -427,7 +428,7 @@ class BidafModel(nn.Module):
         """
         model_vocab = checkpoint['vocab']
         model_c_vocab = checkpoint['c_vocab']
-        max_passage_length = checkpoint['max_passage_length'].value
+        max_passage_length = checkpoint['max_passage_length'][()] # .value has been deprecated
         #print(f"type of max_passage_length: {type(max_passage_length)}, value: {max_passage_length}")
         
         model_vocab = {id_: tok for id_, tok in enumerate(model_vocab)}
