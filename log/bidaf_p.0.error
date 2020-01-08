@@ -1,0 +1,36 @@
+/home/jahnke/BiDaF/prediction.py:186: YAMLLoadWarning: calling yaml.load() without Loader=... is deprecated, as the default Loader is unsafe. Please read https://msg.pyyaml.org/load for full details.
+  config = yaml.load(f)
+/usr/local/lib/python3.7/dist-packages/torch/nn/modules/rnn.py:51: UserWarning: dropout option adds dropout after all but last recurrent layer, so non-zero dropout expects num_layers greater than 1, but got dropout=0.2 and num_layers=1
+  "num_layers={}".format(dropout, num_layers))
+/usr/local/lib/python3.7/dist-packages/torch/nn/functional.py:1351: UserWarning: nn.functional.sigmoid is deprecated. Use torch.sigmoid instead.
+  warnings.warn("nn.functional.sigmoid is deprecated. Use torch.sigmoid instead.")
+Traceback (most recent call last):
+  File "/home/jahnke/BiDaF/prediction.py", line 233, in <module>
+    main()
+  File "/home/jahnke/BiDaF/prediction.py", line 201, in main
+    for qid, query, toks, pred, rel in predict(model, data):
+  File "/home/jahnke/BiDaF/prediction.py", line 150, in predict
+    predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
+  File "/usr/local/lib/python3.7/dist-packages/torch/nn/modules/module.py", line 541, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/dstore/home/jahnke/BiDaF/bidaf.py", line 209, in forward
+    enc_passage = self._encode(passage, p_lengths)
+  File "/dstore/home/jahnke/BiDaF/bidaf.py", line 161, in _encode
+    embedded = self.embedder(features)
+  File "/usr/local/lib/python3.7/dist-packages/torch/nn/modules/module.py", line 541, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/dstore/home/jahnke/BiDaF/embeddings.py", line 177, in forward
+    zip(features, self.embeddings)],
+  File "/dstore/home/jahnke/BiDaF/embeddings.py", line 176, in <listcomp>
+    for _f, _e in
+  File "/usr/local/lib/python3.7/dist-packages/torch/nn/modules/module.py", line 541, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/dstore/home/jahnke/BiDaF/embeddings.py", line 69, in forward
+    for _layer in self.layers]
+  File "/dstore/home/jahnke/BiDaF/embeddings.py", line 69, in <listcomp>
+    for _layer in self.layers]
+  File "/usr/local/lib/python3.7/dist-packages/torch/nn/modules/module.py", line 541, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/usr/local/lib/python3.7/dist-packages/torch/nn/modules/conv.py", line 202, in forward
+    self.padding, self.dilation, self.groups)
+RuntimeError: CUDA out of memory. Tried to allocate 2.36 GiB (GPU 0; 10.92 GiB total capacity; 6.96 GiB already allocated; 2.34 GiB free; 1.05 GiB cached)

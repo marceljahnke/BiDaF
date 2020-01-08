@@ -46,8 +46,8 @@ class BidafModel(nn.Module):
         #self.fc3 = nn.Linear(256, 64)
         #self.fc4 = nn.Linear(64, 1)
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        #self.device = torch.device("cpu") # hotfix for cuda error
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu") # hotfix for cuda error
 
         '''''
         #hier startprojextion

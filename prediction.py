@@ -12,6 +12,7 @@ import re
 import numpy as np
 import torch
 import h5py
+import pandas as pd
 from bidaf import BidafModel
 from experiment.dataset import load_data, tokenize_data, EpochGen
 from experiment.dataset import SymbolEmbSourceNorm
@@ -56,6 +57,8 @@ def reload_state(checkpoint, config, args):
     # max_passage_length = data.passage.map(len).max()
     data = data.iloc[int(len(data.index) * 0.8):]  # test data
     print('Generated positive and negative examples: ', len(data.index))
+    #with pd.option_context('display.max_rows', None):  # more options can be specified also
+    #	print(data.iloc[:100])
     # ---------- done loading data
 
     token_to_id = {tok: id_ for id_, tok in id_to_token.items()}
@@ -74,6 +77,7 @@ def reload_state(checkpoint, config, args):
     id_to_char = {id_: char for char, id_ in char_to_id.items()}
 
     data = get_loader(data, args)
+    print("data got loaded")
 
     if len_tok_voc != len(token_to_id):
         need = set(tok for id_, tok in id_to_token.items()
@@ -147,11 +151,21 @@ def predict(model, data):
     """
     #for batch_id, (qids, passages, queries, _, mappings) in enumerate(data):
     for batch_id, (qids, passages, queries, relevances, mappings) in enumerate(data):
+        print(f"predict for qids: {qids}")
+        #print(f"passages[:2]: {passages[:2]}, passages[2]: {passages[2]}, queries[:2]: {queries[:2]}, queries[2]: {queries[2]}")
         predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
         #predictions = model.get_best_span(start_log_probs, end_log_probs)
         predictions = predicted_relevance.cpu()
+        #print(f"size(predictions): {predictions.size()}")
         passages = passages[0].cpu().data
+        queries = queries[0].cpu().data
+        #print(f"size(passages): {passages.size()}")
+        #print("zip: ", zip(qids, queries, mappings, passages, predictions, relevances))
+        #print(f"len(mappings): {len(mappings)}")
+        print(f"queries.size(): {queries.size()}")
+        #print(f"len(relevances): {len(relevances)}")
         for qid, query, mapping, tokens, pred, rel in zip(qids, queries, mappings, passages, predictions, relevances):
+            print("yield: ", qid)
             yield (qid, query, tokens, pred, rel)
     return
 
@@ -171,7 +185,7 @@ def main():
                            type=int, default=64,
                            help="Batch size to use")
     argparser.add_argument("--cuda",
-                           type=bool, default=torch.cuda.is_available(),
+                           type=bool, default=False,
                            help="Use GPU if possible")
     argparser.add_argument("--use_covariance",
                            action="store_true",
