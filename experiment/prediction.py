@@ -80,7 +80,7 @@ def reload_state(checkpoint, config, args):
                    if id_ >= len_tok_voc)
 
         if args.word_rep:
-            with open(args.word_rep) as f_o: # add  encoding='utf-8' on windows systems
+            with open(args.word_rep, encoding='utf-8') as f_o: # add  encoding='utf-8' on windows systems
                 pre_trained = SymbolEmbSourceText(
                     f_o, need)
         else:
