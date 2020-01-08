@@ -39,12 +39,12 @@ class BidafModel(nn.Module):
                                    bidirectional=True)
         self.attention = AttentionMatrix(self.bidir_hidden_size)
 
-        self.start_projection = nn.Linear(4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)    #war 1
+        self.start_projection = nn.Linear(4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)
 
-        self.fc1 = nn.Linear(self.max_p_length, 256)
-        self.fc2 = nn.Linear(256, 256)
-        self.fc3 = nn.Linear(256, 64)
-        self.fc4 = nn.Linear(64, 1)
+        self.fc1 = nn.Linear(self.max_p_length, 1)
+        #self.fc2 = nn.Linear(256, 256)
+        #self.fc3 = nn.Linear(256, 64)
+        #self.fc4 = nn.Linear(64, 1)
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         #self.device = torch.device("cpu") # hotfix for cuda error
@@ -260,11 +260,14 @@ class BidafModel(nn.Module):
 
         #start_prob = nn.functional.log_softmax(start_logits, dim=1)
         #print("start_prob: ", start_prob.size())
-        start_logits = nn.functional.log_softmax(start_logits, dim=1)
-        x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
-        x = self.dropout(nn.functional.relu(self.fc2(x)))
-        x = self.dropout(nn.functional.relu(self.fc3(x)))
-        relevance_score = nn.functional.sigmoid(self.fc4(x))
+        #start_logits = nn.functional.log_softmax(start_logits, dim=1)
+        #x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
+        #x = self.dropout(nn.functional.relu(self.fc2(x)))
+        #x = self.dropout(nn.functional.relu(self.fc3(x)))
+        x = self.fc1(start_logits)
+        print(f"Contains NaN values: {x != x}, tensor: {x}")
+        relevance_score = nn.functional.sigmoid(x)
+        print(relevance_score)
         '''''
         # Anpassung:
         x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
@@ -287,6 +290,7 @@ class BidafModel(nn.Module):
         # after the end.
         # loss = nll_loss(start_log_probs, starts) + nll_loss(end_log_probs, ends - 1)
         loss = binary_cross_entropy_with_logits(predicted_relevance, relevance.float())
+        print(loss)
         return loss
 
     @classmethod

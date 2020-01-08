@@ -43,9 +43,9 @@ def reload_state(checkpoint, config, args):
 
     # --------- load TSVs as pandas data frames
     # --------- FiQA
-    path_to_passages = '../data/fiqa/FiQA_train_doc_final.tsv'
-    path_to_queries = '../data/fiqa/FiQA_train_question_final.tsv'
-    path_to_relevance = '../data/fiqa/FiQA_train_question_doc_final.tsv'
+    path_to_passages = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_doc_final.tsv'
+    path_to_queries = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_question_final.tsv'
+    path_to_relevance = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_question_doc_final.tsv'
     data = fiqa.load_data(path_to_passages, path_to_queries, path_to_relevance)
     # --------- MS MARCO
     # path_to_passages = './data/ms_marco/collection.tsv'

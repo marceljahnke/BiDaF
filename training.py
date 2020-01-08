@@ -113,9 +113,9 @@ def init_state(config, args):
     # --------- load TSVs as pandas data frames
 
     # --------- FiQA
-    path_to_passages = './data/fiqa/FiQA_train_doc_final.tsv'
-    path_to_queries = './data/fiqa/FiQA_train_question_final.tsv'
-    path_to_relevance = './data/fiqa/FiQA_train_question_doc_final.tsv'
+    path_to_passages = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_doc_final.tsv'
+    path_to_queries = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_question_final.tsv'
+    path_to_relevance = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_question_doc_final.tsv'
     data = fiqa.load_data(path_to_passages, path_to_queries, path_to_relevance)
     # --------- MS MARCO
     # path_to_passages = './data/ms_marco/collection.tsv'
@@ -162,7 +162,8 @@ def init_state(config, args):
     # Char embeddings are already random, so we don't need to update them.
 
     if torch.cuda.is_available() and args.cuda:
-        if False and torch.cuda.device_count() > 1: # does not work, yet
+        if torch.cuda.device_count() > 1:
+            model.to(torch.device("cuda:0"))
             model = torch.nn.DataParallel(model)
         else:
             model.cuda()
@@ -179,7 +180,7 @@ def train(epoch, model, optimizer, data, args):
     """
 
     for batch_id, (_, passages, queries, relevances, _) in enumerate(data):
-        predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2]) # parameters not final
+        predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
         #loss = model.get_loss(start_log_probs, end_log_probs, answers[:, 0], answers[:, 1])
         loss = model.get_loss(predicted_relevance, relevances) # ?
         optimizer.zero_grad()
@@ -245,7 +246,7 @@ def main():
 
     for epoch in epochs:
         print('Starting epoch', epoch)
-        train(epoch, model, optimizer, data, args)
+        #train(epoch, model, optimizer, data, args)
         checkpointing.checkpoint(model, epoch, optimizer,
                    checkpoint, args.exp_folder, max_passage_length)
     print('Training done')
