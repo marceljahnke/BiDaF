@@ -260,6 +260,7 @@ class BidafModel(nn.Module):
 
         #start_prob = nn.functional.log_softmax(start_logits, dim=1)
         #print("start_prob: ", start_prob.size())
+        start_logits = nn.functional.log_softmax(start_logits, dim=1)
         x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
         x = self.dropout(nn.functional.relu(self.fc2(x)))
         x = self.dropout(nn.functional.relu(self.fc3(x)))

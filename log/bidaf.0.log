@@ -1,0 +1,13 @@
+000 (4947.000.000) 01/07 11:14:21 Job submitted from host: <192.168.1.80:9618?addrs=192.168.1.80-9618&noUDP&sock=180308_de7d_4>
+...
+001 (4947.000.000) 01/07 11:14:23 Job executing on host: <192.168.1.83:9618?addrs=192.168.1.83-9618+[--1]-9618&noUDP&sock=29310_ccf2_3>
+...
+007 (4947.000.000) 01/07 11:14:23 Shadow exception!
+	Error from slot1_2@node03.local: Failed to execute '/var/lib/condor/execute/dir_3061/condor_exec.exe' with arguments --word_rep /home/jahnke/BiDaF/data/glove.840B.300d.txt /home/jahnke/BiDaF/results/ /home/jahnke/BiDaF/data/: (errno=2: 'No such file or directory')
+	0  -  Run Bytes Sent By Job
+	9244  -  Run Bytes Received By Job
+...
+012 (4947.000.000) 01/07 11:14:23 Job was held.
+	Error from slot1_2@node03.local: Failed to execute '/var/lib/condor/execute/dir_3061/condor_exec.exe' with arguments --word_rep /home/jahnke/BiDaF/data/glove.840B.300d.txt /home/jahnke/BiDaF/results/ /home/jahnke/BiDaF/data/: (errno=2: 'No such file or directory')
+	Code 6 Subcode 2
+...
