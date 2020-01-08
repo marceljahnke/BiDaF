@@ -171,7 +171,7 @@ def main():
                            type=int, default=64,
                            help="Batch size to use")
     argparser.add_argument("--cuda",
-                           type=bool, default=False,
+                           type=bool, default=torch.cuda.is_available(),
                            help="Use GPU if possible")
     argparser.add_argument("--use_covariance",
                            action="store_true",

@@ -264,11 +264,12 @@ class BidafModel(nn.Module):
         #x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
         #x = self.dropout(nn.functional.relu(self.fc2(x)))
         #x = self.dropout(nn.functional.relu(self.fc3(x)))
-        print(f"start_logits contains NaN values: {start_logits != start_logits}, tensor: {start_logits}")
+        
+        #print(f"start_logits contains NaN values: {start_logits != start_logits}, tensor: {start_logits}")
         x = self.fc1(start_logits)
-        print(f"first layer contains NaN values: {x != x}, tensor: {x}")
+        #print(f"first layer contains NaN values: {x != x}, tensor: {x}")
         relevance_score = nn.functional.sigmoid(x)
-        print(relevance_score)
+        #print(relevance_score)
         '''''
         # Anpassung:
         x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
@@ -294,7 +295,7 @@ class BidafModel(nn.Module):
         #loss = nn.BCELoss(predicted_relevance, relevance.float())
         loss = nn.BCELoss()
         output = loss(predicted_relevance, relevance.float())
-        print(f"loss: {output}")
+        #print(f"loss: {output}")
         return output
 
     @classmethod

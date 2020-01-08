@@ -181,7 +181,7 @@ def train(epoch, model, optimizer, data, args):
 
     for batch_id, (_, passages, queries, relevances, _) in enumerate(data):
         predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
-        loss = model.get_loss(predicted_relevance, relevances)
+        loss = model.module.get_loss(predicted_relevance, relevances)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
