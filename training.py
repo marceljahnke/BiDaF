@@ -181,11 +181,10 @@ def train(epoch, model, optimizer, data, args):
 
     for batch_id, (_, passages, queries, relevances, _) in enumerate(data):
         predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
-        #loss = model.get_loss(start_log_probs, end_log_probs, answers[:, 0], answers[:, 1])
-        loss = model.get_loss(predicted_relevance, relevances) # ?
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        #loss = model.get_loss(predicted_relevance, relevances) # ?
+        #optimizer.zero_grad()
+        #loss.backward()
+        #optimizer.step()
     return
 
 
@@ -246,7 +245,7 @@ def main():
 
     for epoch in epochs:
         print('Starting epoch', epoch)
-        #train(epoch, model, optimizer, data, args)
+        train(epoch, model, optimizer, data, args)
         checkpointing.checkpoint(model, epoch, optimizer,
                    checkpoint, args.exp_folder, max_passage_length)
     print('Training done')
