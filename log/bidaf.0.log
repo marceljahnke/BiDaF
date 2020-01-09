@@ -1,13 +1,40 @@
-000 (4947.000.000) 01/07 11:14:21 Job submitted from host: <192.168.1.80:9618?addrs=192.168.1.80-9618&noUDP&sock=180308_de7d_4>
+000 (4961.000.000) 01/08 14:42:29 Job submitted from host: <192.168.1.80:9618?addrs=192.168.1.80-9618&noUDP&sock=180308_de7d_4>
 ...
-001 (4947.000.000) 01/07 11:14:23 Job executing on host: <192.168.1.83:9618?addrs=192.168.1.83-9618+[--1]-9618&noUDP&sock=29310_ccf2_3>
+001 (4961.000.000) 01/08 14:42:30 Job executing on host: <192.168.1.85:9618?addrs=192.168.1.85-9618+[--1]-9618&noUDP&sock=11100_4155_3>
 ...
-007 (4947.000.000) 01/07 11:14:23 Shadow exception!
-	Error from slot1_2@node03.local: Failed to execute '/var/lib/condor/execute/dir_3061/condor_exec.exe' with arguments --word_rep /home/jahnke/BiDaF/data/glove.840B.300d.txt /home/jahnke/BiDaF/results/ /home/jahnke/BiDaF/data/: (errno=2: 'No such file or directory')
-	0  -  Run Bytes Sent By Job
-	9244  -  Run Bytes Received By Job
+006 (4961.000.000) 01/08 14:42:39 Image size of job updated: 157112
+	154  -  MemoryUsage of job (MB)
+	157112  -  ResidentSetSize of job (KB)
 ...
-012 (4947.000.000) 01/07 11:14:23 Job was held.
-	Error from slot1_2@node03.local: Failed to execute '/var/lib/condor/execute/dir_3061/condor_exec.exe' with arguments --word_rep /home/jahnke/BiDaF/data/glove.840B.300d.txt /home/jahnke/BiDaF/results/ /home/jahnke/BiDaF/data/: (errno=2: 'No such file or directory')
-	Code 6 Subcode 2
+006 (4961.000.000) 01/08 14:47:40 Image size of job updated: 7871900
+	7632  -  MemoryUsage of job (MB)
+	7814348  -  ResidentSetSize of job (KB)
+...
+006 (4961.000.000) 01/08 14:52:40 Image size of job updated: 7887316
+	7647  -  MemoryUsage of job (MB)
+	7829764  -  ResidentSetSize of job (KB)
+...
+006 (4961.000.000) 01/08 14:57:40 Image size of job updated: 7888024
+	7647  -  MemoryUsage of job (MB)
+	7830472  -  ResidentSetSize of job (KB)
+...
+006 (4961.000.000) 01/08 15:00:00 Image size of job updated: 8025908
+	7647  -  MemoryUsage of job (MB)
+	7830472  -  ResidentSetSize of job (KB)
+...
+005 (4961.000.000) 01/08 15:00:00 Job terminated.
+	(1) Normal termination (return value 0)
+		Usr 0 00:29:53, Sys 0 00:03:05  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 00:29:53, Sys 0 00:03:05  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	8575462  -  Run Bytes Sent By Job
+	4877888  -  Run Bytes Received By Job
+	8575462  -  Total Bytes Sent By Job
+	4877888  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated
+	   Cpus                 :                 1         1
+	   Disk (KB)            :    13148     5000     86748
+	   Gpus                 :                 4         4
+	   Memory (MB)          :     7647        5         5
 ...

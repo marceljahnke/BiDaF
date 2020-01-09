@@ -349,6 +349,8 @@ class EpochGen(object):
             relevances = [self.data[ind][3] for ind in batch_idx]
             mappings = [self.data[ind][4] for ind in batch_idx]
 
+            #print("queries before process_batch_for_length: ", queries)
+            #print("passages before process_batch_for_length: ", passages)
             passages = self.process_batch_for_length(
                     passages, c_passages)
             queries = self.process_batch_for_length(
@@ -357,5 +359,7 @@ class EpochGen(object):
             relevances = Variable(self.tensor_type(relevances))
 
             batch = (qids, passages, queries, relevances, mappings)
+            #print("queries: ", queries)
+            #print("passages: ", passages)
             yield batch
         return

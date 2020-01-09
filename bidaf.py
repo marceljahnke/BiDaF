@@ -39,15 +39,15 @@ class BidafModel(nn.Module):
                                    bidirectional=True)
         self.attention = AttentionMatrix(self.bidir_hidden_size)
 
-        self.start_projection = nn.Linear(4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)    #war 1
+        self.start_projection = nn.Linear(4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)
 
-        self.fc1 = nn.Linear(self.max_p_length, 256)
-        self.fc2 = nn.Linear(256, 256)
-        self.fc3 = nn.Linear(256, 64)
-        self.fc4 = nn.Linear(64, 1)
+        self.fc1 = nn.Linear(self.max_p_length, 1)
+        #self.fc2 = nn.Linear(256, 256)
+        #self.fc3 = nn.Linear(256, 64)
+        #self.fc4 = nn.Linear(64, 1)
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        #self.device = torch.device("cpu") # hotfix for cuda error
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu") # hotfix for cuda error
 
         '''''
         #hier startprojextion
@@ -244,10 +244,10 @@ class BidafModel(nn.Module):
         # [b, p_num_tokens, 4*h] -> [b, n, 1] -> [b, n]
         start_projection = self.start_projection(start_input).squeeze(2)
         #print("start_projection: ", start_projection.size())
-        start_logits = start_projection * p_mask + (p_mask - 1) * 1e20
+        start_logits = start_projection * p_mask # + (p_mask - 1) * 1e20
         # for all batches that dont contains the pasage with the maximal length -> pad them with -1e20 to maximal length
         if p_num_tokens < self.max_p_length:
-                ext_tensor = torch.ones((batch_size, self.max_p_length - p_num_tokens)) * -1e20
+                ext_tensor = torch.zeros((batch_size, self.max_p_length - p_num_tokens)) #* -1e20
                 ext_tensor = ext_tensor.to(self.device)
                 start_logits = torch.cat([start_logits, ext_tensor], dim=1)
         #print("start_logits: ", start_logits.size())
@@ -260,11 +260,16 @@ class BidafModel(nn.Module):
 
         #start_prob = nn.functional.log_softmax(start_logits, dim=1)
         #print("start_prob: ", start_prob.size())
-        start_logits = nn.functional.log_softmax(start_logits, dim=1)
-        x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
-        x = self.dropout(nn.functional.relu(self.fc2(x)))
-        x = self.dropout(nn.functional.relu(self.fc3(x)))
-        relevance_score = nn.functional.sigmoid(self.fc4(x))
+        #start_logits = nn.functional.log_softmax(start_logits, dim=1)
+        #x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
+        #x = self.dropout(nn.functional.relu(self.fc2(x)))
+        #x = self.dropout(nn.functional.relu(self.fc3(x)))
+        
+        #print(f"start_logits contains NaN values: {start_logits != start_logits}, tensor: {start_logits}")
+        x = self.fc1(start_logits)
+        #print(f"first layer contains NaN values: {x != x}, tensor: {x}")
+        relevance_score = nn.functional.sigmoid(x)
+        #print(relevance_score)
         '''''
         # Anpassung:
         x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
@@ -286,8 +291,12 @@ class BidafModel(nn.Module):
         # Subtracts 1 from the end points, to get the exact indices, not 1
         # after the end.
         # loss = nll_loss(start_log_probs, starts) + nll_loss(end_log_probs, ends - 1)
-        loss = binary_cross_entropy_with_logits(predicted_relevance, relevance.float())
-        return loss
+
+        #loss = nn.BCELoss(predicted_relevance, relevance.float())
+        loss = nn.BCELoss()
+        output = loss(predicted_relevance, relevance.float())
+        #print(f"loss: {output}")
+        return output
 
     @classmethod
     def get_best_span(cls, start_log_probs, end_log_probs):
