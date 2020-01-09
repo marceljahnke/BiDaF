@@ -243,5 +243,5 @@ def main():
 
 
 if __name__ == '__main__':
-    # run with: python experiment/prediction.py --word_rep ./data/glove.840B.300d.txt ./results/ ./data/ ./results/
+    # run with: python experiment/prediction.py --word_rep ./data/glove.840B.300d.txt ./experiment/ ./data/ ./results/
     main()
