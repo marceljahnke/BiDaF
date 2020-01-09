@@ -151,21 +151,21 @@ def predict(model, data):
     """
     #for batch_id, (qids, passages, queries, _, mappings) in enumerate(data):
     for batch_id, (qids, passages, queries, relevances, mappings) in enumerate(data):
-        print(f"predict for qids: {qids}")
+        #print(f"predict for qids: {qids}")
         #print(f"passages[:2]: {passages[:2]}, passages[2]: {passages[2]}, queries[:2]: {queries[:2]}, queries[2]: {queries[2]}")
         predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
         #predictions = model.get_best_span(start_log_probs, end_log_probs)
-        predictions = predicted_relevance.cpu()
+        predictions = predicted_relevance
         #print(f"size(predictions): {predictions.size()}")
-        passages = passages[0].cpu().data
-        queries = queries[0].cpu().data
+        passages = passages[0].data
+        queries = queries[0].data
         #print(f"size(passages): {passages.size()}")
         #print("zip: ", zip(qids, queries, mappings, passages, predictions, relevances))
         #print(f"len(mappings): {len(mappings)}")
-        print(f"queries.size(): {queries.size()}")
+        #print(f"queries.size(): {queries.size()}")
         #print(f"len(relevances): {len(relevances)}")
         for qid, query, mapping, tokens, pred, rel in zip(qids, queries, mappings, passages, predictions, relevances):
-            print("yield: ", qid)
+            #print("yield: ", qid)
             yield (qid, query, tokens, pred, rel)
     return
 
@@ -182,10 +182,10 @@ def main():
                            help="Text file containing pre-trained "
                                 "word representations.")
     argparser.add_argument("--batch_size",
-                           type=int, default=64,
+                           type=int, default=16,
                            help="Batch size to use")
     argparser.add_argument("--cuda",
-                           type=bool, default=False,
+                           type=bool, default=torch.cuda.is_available(),
                            help="Use GPU if possible")
     argparser.add_argument("--use_covariance",
                            action="store_true",
@@ -199,7 +199,7 @@ def main():
     with open(config_filepath) as f:
         config = yaml.load(f)
 
-    checkpoint = try_to_resume(args.exp_folder)
+    checkpoint = try_to_resume(args.dest)
 
     if checkpoint:
         model, id_to_token, id_to_char, data = reload_state(

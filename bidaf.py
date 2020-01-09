@@ -41,13 +41,14 @@ class BidafModel(nn.Module):
 
         self.start_projection = nn.Linear(4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)
 
-        self.fc1 = nn.Linear(self.max_p_length, 1)
+        self.fc1 = nn.Linear(self.max_p_length, 512)
+        self.fc2 = nn.Linear(512, 1)
         #self.fc2 = nn.Linear(256, 256)
         #self.fc3 = nn.Linear(256, 64)
         #self.fc4 = nn.Linear(64, 1)
 
-        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.device = torch.device("cpu") # hotfix for cuda error
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        #self.device = torch.device("cpu") # hotfix for cuda error
 
         '''''
         #hier startprojextion
@@ -266,9 +267,9 @@ class BidafModel(nn.Module):
         #x = self.dropout(nn.functional.relu(self.fc3(x)))
         
         #print(f"start_logits contains NaN values: {start_logits != start_logits}, tensor: {start_logits}")
-        x = self.fc1(start_logits)
+        x = nn.functional.relu(self.fc1(start_logits))
         #print(f"first layer contains NaN values: {x != x}, tensor: {x}")
-        relevance_score = nn.functional.sigmoid(x)
+        relevance_score = torch.sigmoid(self.fc2(x))
         #print(relevance_score)
         '''''
         # Anpassung:

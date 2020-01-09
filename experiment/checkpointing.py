@@ -57,7 +57,7 @@ def save_max_passage_length(max_passage_length, destination):
     if 'max_passage_length' not in destination:
         destination.create_dataset('max_passage_length', data=max_passage_length)
     else:
-        destination['max_passage_length'] = max_passage_length
+        destination['max_passage_length'][()] = max_passage_length
     return
 
 
@@ -65,7 +65,7 @@ def checkpoint(model, epoch, optimizer, dest, exp_folder, max_passage_length):
     """
     Checkpoint the current state of training.
     """
-    save_model(model.module, dest)
+    save_model(model, dest)
     save_epoch(epoch, dest)
     save_max_passage_length(max_passage_length, dest)
     torch.save(optimizer.state_dict(),

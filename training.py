@@ -162,7 +162,7 @@ def init_state(config, args):
     # Char embeddings are already random, so we don't need to update them.
 
     if torch.cuda.is_available() and args.cuda:
-        if torch.cuda.device_count() > 1:
+        if False and torch.cuda.device_count() > 1:
             model.to(torch.device("cuda:0"))
             model = torch.nn.DataParallel(model)
         else:
@@ -181,7 +181,7 @@ def train(epoch, model, optimizer, data, args):
 
     for batch_id, (_, passages, queries, relevances, _) in enumerate(data):
         predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
-        loss = model.module.get_loss(predicted_relevance, relevances)
+        loss = model.get_loss(predicted_relevance, relevances)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -195,6 +195,7 @@ def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument("exp_folder", help="Experiment folder")
     argparser.add_argument("data", help="Training data")
+    argparser.add_argument("dest", help="Destination folder")
     argparser.add_argument("--force_restart",
                            action="store_true",
                            default=False,
@@ -229,7 +230,7 @@ def main():
         print('Preparing to train...')
         model, id_to_token, id_to_char, optimizer, data, max_passage_length = init_state(
             config, args)
-        checkpoint = h5py.File(os.path.join(args.exp_folder, 'checkpoint'))
+        checkpoint = h5py.File(os.path.join(args.dest, 'checkpoint'))
         checkpointing.save_vocab(checkpoint, 'vocab', id_to_token)
         checkpointing.save_vocab(checkpoint, 'c_vocab', id_to_char)
         # save max passage length here! not in every epoch
@@ -247,7 +248,7 @@ def main():
         print('Starting epoch', epoch)
         train(epoch, model, optimizer, data, args)
         checkpointing.checkpoint(model, epoch, optimizer,
-                   checkpoint, args.exp_folder, max_passage_length)
+                   checkpoint, args.dest, max_passage_length)
     print('Training done')
     return
 
