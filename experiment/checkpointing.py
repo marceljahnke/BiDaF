@@ -43,6 +43,7 @@ def save_model(model, destination):
 
     for name, value in model.cpu().state_dict().items():
         save_params(destination, 'model/'+name, value)
+    model.to(torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'))
     return
 
 

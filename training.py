@@ -166,7 +166,8 @@ def init_state(config, args):
             model.to(torch.device("cuda:0"))
             model = torch.nn.DataParallel(model)
         else:
-            model.cuda()
+            #model.cuda()
+            model.to(torch.device('cuda:0'))
 
     model.train()
 
@@ -246,6 +247,7 @@ def main():
 
     for epoch in epochs:
         print('Starting epoch', epoch)
+        print('Model on:', next(model.parameters()).device)
         train(epoch, model, optimizer, data, args)
         checkpointing.checkpoint(model, epoch, optimizer,
                    checkpoint, args.dest, max_passage_length)

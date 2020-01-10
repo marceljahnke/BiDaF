@@ -205,6 +205,14 @@ class BidafModel(nn.Module):
         """
         Forward pass
         """
+        
+        # Move parameters to GPU
+        #passage = (passage[0].to(self.device), passage[1].to(self.device))
+        #p_lenths = p_lengths.to(self.device)
+        #question = (question[0].to(self.device), question[1].to(self.device))
+        #q_lengths = q_lengths.to(self.device)
+
+	# potential device check (get_device() on cuda tensor tensor.is_cuda) here
 
         # Encode the text
         enc_passage = self._encode(passage, p_lengths)

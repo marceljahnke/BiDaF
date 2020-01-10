@@ -7,4 +7,7 @@ Creating model...
 Loading pre-trained embeddings...
 with encoding utf-8
 Starting epoch 0
+Model on: cuda:0
+Starting epoch 1
+Model on: cuda:0
 Training done
