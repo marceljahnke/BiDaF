@@ -446,8 +446,7 @@ class BidafModel(nn.Module):
         """
         model_vocab = checkpoint['vocab']
         model_c_vocab = checkpoint['c_vocab']
-        max_passage_length = checkpoint['max_passage_length'][()] # .value has been deprecated
-        #print(f"type of max_passage_length: {type(max_passage_length)}, value: {max_passage_length}")
+        max_passage_length = checkpoint['max_passage_length'][()]
         
         model_vocab = {id_: tok for id_, tok in enumerate(model_vocab)}
         model_c_vocab = {id_: tok for id_, tok in enumerate(model_c_vocab)}

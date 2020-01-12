@@ -103,20 +103,18 @@ def get_loader(data, config):
 
 
 def init_state(config, args):
-    token_to_id = {'': 0}
-    char_to_id = {'': 0}
-    print('Loading data...')
-    print('with encoding utf8')
-    #with open(args.data, encoding='utf-8') as f_o:
-    #data = "./data/train_v2.1.json"
+    #token_to_id = {'': 0}
+    #char_to_id = {'': 0}
+    #print('Loading data...')
+    #print('with encoding utf8')
 
     # --------- load TSVs as pandas data frames
 
     # --------- FiQA
-    path_to_passages = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_doc_final.tsv'
-    path_to_queries = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_question_final.tsv'
-    path_to_relevance = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_question_doc_final.tsv'
-    data = fiqa.load_data(path_to_passages, path_to_queries, path_to_relevance)
+    #path_to_passages = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_doc_final.tsv'
+    #path_to_queries = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_question_final.tsv'
+    #path_to_relevance = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_question_doc_final.tsv'
+    #data = fiqa.load_data(path_to_passages, path_to_queries, path_to_relevance)
     # --------- MS MARCO
     # path_to_passages = './data/ms_marco/collection.tsv'
     # path_to_queries = './data/ms_marco/queries.train.tsv'
@@ -124,18 +122,18 @@ def init_state(config, args):
     # data = ms.load_data(path_to_passages, path_to_queries, path_to_relevance)
     # --------------- Split data into training and test data
     # max_passage_length = data.passage.map(len).max()
-    data = data.iloc[:int(len(data.index) * 0.8)] # training data
-    print('Generated positive and negative examples: ', len(data.index))
+    #data = data.iloc[:int(len(data.index) * 0.8)] # training data
+    #print('Generated positive and negative examples: ', len(data.index))
     # ---------- done loading data
 
-    #with open(data, encoding='utf-8') as f_o:
-    #    data, _ = load_data(json.load(f_o), span_only=True, answered_only=True)
     print('Tokenizing data...')
-    data, max_passage_length = tokenize_data(data, token_to_id, char_to_id)
+    #data, max_passage_length = tokenize_data(data, token_to_id, char_to_id)
+
+    # LOAD DATA FROM H5 FILE (set data and id_to_char/token and max_passage_length)
     data = get_loader(data, config)
 
-    id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
-    id_to_char = {id_: char for char, id_ in char_to_id.items()}
+    #id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
+    #id_to_char = {id_: char for char, id_ in char_to_id.items()}
 
     print('Creating model...')
     model = BidafModel.from_config(config['bidaf'], id_to_token, id_to_char, max_p=max_passage_length)
@@ -232,8 +230,8 @@ def main():
         model, id_to_token, id_to_char, optimizer, data, max_passage_length = init_state(
             config, args)
         checkpoint = h5py.File(os.path.join(args.dest, 'checkpoint'))
-        checkpointing.save_vocab(checkpoint, 'vocab', id_to_token)
-        checkpointing.save_vocab(checkpoint, 'c_vocab', id_to_char)
+        #checkpointing.save_vocab(checkpoint, 'vocab', id_to_token)
+        #checkpointing.save_vocab(checkpoint, 'c_vocab', id_to_char)
         # save max passage length here! not in every epoch
 
     if torch.cuda.is_available() and args.cuda:
