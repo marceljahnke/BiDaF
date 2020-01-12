@@ -130,6 +130,19 @@ def init_state(config, args):
     #data, max_passage_length = tokenize_data(data, token_to_id, char_to_id)
 
     # LOAD DATA FROM H5 FILE (set data and id_to_char/token and max_passage_length)
+    train_file = 'Save/train.h5'
+    with h5py.File(train_file, 'r') as file:
+        queries = list(file['queries'])       # als liste ausgeben ?
+        p_token_chars = list(file['p_token_chars'])
+        q_token_chars = list(file['q_token_chars'])
+        passages = list(file['passages'])
+        mappings = list(file['mappings'])
+        labels = list(file['labels'])
+        id_to_token = file['vocab']      # evtl direkt als dict gespeichert
+        id_to_char = file['c_vocab']
+        max_passage_length = file['max_passage_length']
+
+    data = list(zip(queries, p_token_chars, q_token_chars, passages, mappings, labels))
     data = get_loader(data, config)
 
     #id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
@@ -254,5 +267,5 @@ def main():
 
 
 if __name__ == '__main__':
-    # run with: python experiment/training.py --word_rep ./data/glove.840B.300d.txt ./experiment/ ./data/
+    # run with: python experiment/training.py --word_rep ./data/glove.840B.300d.txt ./experiment/ ./data/ ./results/
     main()

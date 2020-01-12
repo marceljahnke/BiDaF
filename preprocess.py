@@ -31,8 +31,9 @@ def max_words_per_passage(sentences):
         cc = len(s.translate(str.maketrans('', '', string.punctuation)).split(' '))
         if cc > c:
             c = cc
-            print(s)
+            #print(s)
         #c = cc if cc > c else c
+    #print(c)
     return c
 
 
@@ -110,13 +111,21 @@ def main():
     print('writing {}...'.format(dev_file))
     with h5py.File(dev_file, 'w') as fp:
         dev_shape = (len(ds.devset),)
-        q_ids_ds = fp.create_dataset('q_ids', dev_shape, dtype='int32')
-        inputs_ds = fp.create_dataset('inputs', dev_shape, dtype=var_int32)
+        query_ds = fp.create_dataset('queries', dev_shape, dtype=dt)
+        p_token_chars_ds = fp.create_dataset('p_token_chars', dev_shape, dtype=var_int32)
+        q_token_chars_ds = fp.create_dataset('q_token_chars', dev_shape, dtype=var_int32)
+        passages_ds = fp.create_dataset('passages', dev_shape, dtype=dt)
+        mappings_ds = fp.create_dataset('mappings', dev_shape, dtype=var_int32)
         labels_ds = fp.create_dataset('labels', dev_shape, dtype='int32')
         for i, (q_id, query, doc, label) in enumerate(tqdm(ds.devset)):
-            q_ids_ds[i] = q_id
-            inputs_ds[i] = tokenize(query, pos_doc, token_to_id, char_to_id)
-            labels_ds[i] = label
+            t_p = tokenize(query, pos_doc, token_to_id, char_to_id)
+            query_ds[i] = t_p[0]
+            p_token_chars_ds = t_p[1]
+            q_token_chars_ds = t_p[2]
+            passages_ds = t_p[3]
+            mappings_ds = t_p[4]
+            labels_ds[i] = 1
+            i += 1
         # create and save vocabs
         id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
         id_to_char = {id_: char for char, id_ in char_to_id.items()}
@@ -128,13 +137,21 @@ def main():
     print('writing {}...'.format(test_file))
     with h5py.File(test_file, 'w') as fp:
         test_shape = (len(ds.testset),)
-        q_ids_ds = fp.create_dataset('q_ids', test_shape, dtype='int32')
-        inputs_ds = fp.create_dataset('inputs', test_shape, dtype=var_int32)
+        query_ds = fp.create_dataset('queries', test_shape, dtype=dt)
+        p_token_chars_ds = fp.create_dataset('p_token_chars', test_shape, dtype=var_int32)
+        q_token_chars_ds = fp.create_dataset('q_token_chars', test_shape, dtype=var_int32)
+        passages_ds = fp.create_dataset('passages', test_shape, dtype=dt)
+        mappings_ds = fp.create_dataset('mappings', test_shape, dtype=var_int32)
         labels_ds = fp.create_dataset('labels', test_shape, dtype='int32')
         for i, (q_id, query, doc, label) in enumerate(tqdm(ds.testset)):
-            q_ids_ds[i] = q_id
-            inputs_ds[i] = tokenize(query, pos_doc, token_to_id, char_to_id)
-            labels_ds[i] = label
+            t_p = tokenize(query, pos_doc, token_to_id, char_to_id)
+            query_ds[i] = t_p[0]
+            p_token_chars_ds = t_p[1]
+            q_token_chars_ds = t_p[2]
+            passages_ds = t_p[3]
+            mappings_ds = t_p[4]
+            labels_ds[i] = 1
+            i += 1
         # create and save vocabs
         id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
         id_to_char = {id_: char for char, id_ in char_to_id.items()}
