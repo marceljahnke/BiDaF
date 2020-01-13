@@ -62,13 +62,12 @@ def save_max_passage_length(max_passage_length, destination):
     return
 
 
-def checkpoint(model, epoch, optimizer, dest, exp_folder, max_passage_length):
+def checkpoint(model, epoch, optimizer, dest, exp_folder):
     """
     Checkpoint the current state of training.
     """
     save_model(model, dest)
     save_epoch(epoch, dest)
-    save_max_passage_length(max_passage_length, dest)
     torch.save(optimizer.state_dict(),
                os.path.join(exp_folder, 'checkpoint.opt'))
     return

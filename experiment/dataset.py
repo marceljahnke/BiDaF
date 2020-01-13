@@ -108,11 +108,11 @@ def tokenize_data(data, token_to_id, char_to_id, limit=None):
     """
     tokenized = []
     max_p_tokens_num = 0
-    for _, row in data.iterrows():
+    for (query, passage, label) in data:
         q_tokens, q_chars, _, _, _ = \
-            rich_tokenize(row['query'], token_to_id, char_to_id, update=True)
+            rich_tokenize(query, token_to_id, char_to_id, update=True)
         p_tokens, p_chars, _, _, mapping = \
-            rich_tokenize(row['passage'], token_to_id, char_to_id, update=True)
+            rich_tokenize(passage, token_to_id, char_to_id, update=True)
 
         # Keep or not based on length of passage.
         if limit is not None and len(p_tokens) > limit:
@@ -124,10 +124,9 @@ def tokenize_data(data, token_to_id, char_to_id, limit=None):
 
         tokenized.append(
             (
-                row['qid'],
                 (p_tokens, p_chars),
                 (q_tokens, q_chars),
-                row['relevance'],
+                label,
                 mapping
             )
         )
@@ -341,25 +340,21 @@ class EpochGen(object):
         for start_ind in range(0, self.n_samples - 1, self.batch_size):
             batch_idx = self.idx[start_ind:start_ind+self.batch_size]
 
-            qids = [self.data[ind][0] for ind in batch_idx]
-            passages = [self.data[ind][1][0] for ind in batch_idx]
-            c_passages = [self.data[ind][1][1] for ind in batch_idx]
-            queries = [self.data[ind][2][0] for ind in batch_idx]
-            c_queries = [self.data[ind][2][1] for ind in batch_idx]
-            relevances = [self.data[ind][3] for ind in batch_idx]
-            mappings = [self.data[ind][4] for ind in batch_idx]
+            #qids = [self.data[ind][0] for ind in batch_idx]
+            passages = [self.data[ind][0][0] for ind in batch_idx]
+            c_passages = [self.data[ind][0][1] for ind in batch_idx]
+            queries = [self.data[ind][1][0] for ind in batch_idx]
+            c_queries = [self.data[ind][1][1] for ind in batch_idx]
+            label = [self.data[ind][2] for ind in batch_idx]
+            mappings = [self.data[ind][3] for ind in batch_idx]
 
-            #print("queries before process_batch_for_length: ", queries)
-            #print("passages before process_batch_for_length: ", passages)
             passages = self.process_batch_for_length(
                     passages, c_passages)
             queries = self.process_batch_for_length(
                     queries, c_queries)
 
-            relevances = Variable(self.tensor_type(relevances))
+            label = Variable(self.tensor_type(label))
 
-            batch = (qids, passages, queries, relevances, mappings)
-            #print("queries: ", queries)
-            #print("passages: ", passages)
+            batch = (passages, queries, label, mappings)
             yield batch
         return

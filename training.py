@@ -103,61 +103,36 @@ def get_loader(data, config):
 
 
 def init_state(config, args):
-    #token_to_id = {'': 0}
-    #char_to_id = {'': 0}
-    #print('Loading data...')
-    #print('with encoding utf8')
-
-    # --------- load TSVs as pandas data frames
-
-    # --------- FiQA
-    #path_to_passages = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_doc_final.tsv'
-    #path_to_queries = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_question_final.tsv'
-    #path_to_relevance = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_question_doc_final.tsv'
-    #data = fiqa.load_data(path_to_passages, path_to_queries, path_to_relevance)
-    # --------- MS MARCO
-    # path_to_passages = './data/ms_marco/collection.tsv'
-    # path_to_queries = './data/ms_marco/queries.train.tsv'
-    # path_to_relevance = './data/ms_marco/qrels.train.tsv'
-    # data = ms.load_data(path_to_passages, path_to_queries, path_to_relevance)
-    # --------------- Split data into training and test data
-    # max_passage_length = data.passage.map(len).max()
-    #data = data.iloc[:int(len(data.index) * 0.8)] # training data
-    #print('Generated positive and negative examples: ', len(data.index))
-    # ---------- done loading data
-
-    print('Tokenizing data...')
-    #data, max_passage_length = tokenize_data(data, token_to_id, char_to_id)
 
     # LOAD DATA FROM H5 FILE (set data and id_to_char/token and max_passage_length)
-    train_file = 'Save/train.h5'
+    train_file = './data/preprocessed/train.h5'
+    print(f'Loading data from {train_file}...')
     with h5py.File(train_file, 'r') as file:
-        queries = list(file['queries'])       # als liste ausgeben ?
-        print(type(queries))
-        #print(queries)
-        p_token_chars = list(file['p_token_chars'])
-        print('p token chars')
-        print(p_token_chars)
-        q_token_chars = list(file['q_token_chars'])
-        print('q token chars')
-        print(q_token_chars)
+        queries = list(file['queries'])
+        #p_token = list(file['p_token'])
+        #p_chars = list(file['p_chars'])
+        #q_token = list(file['q_token'])
+        #q_chars = list(file['q_chars'])
         passages = list(file['passages'])
-        print(type(passages))
-        #print(passages)
-        mappings = list(file['mappings'])
+        #mappings = list(file['mappings'])
         labels = list(file['labels'])
-        id_to_token = file['vocab']
-        #print(type(id_to_token))# evtl direkt als dict gespeichert
-        #print(id_to_token)
-        id_to_char = file['c_vocab']
-        #print(type(id_to_char))
-        max_passage_length = file['max_passage_length']
+        #id_to_token = file['vocab']
+        #id_to_char = file['c_vocab']
+        max_passage_length = file['max_passage_length'][()]
 
-    data = list(zip(queries, p_token_chars, q_token_chars, passages, mappings, labels))
+    #data = list(zip(queries, zip(p_token, p_chars), zip(q_token, q_chars), passages, mappings, labels))
+
+    token_to_id = {'': 0}
+    char_to_id = {'': 0}
+
+    data = list(zip(queries, passages, labels))
+
+    print('Tokenize data...')
+    data = tokenize_data(data, token_to_id, char_to_id)
     data = get_loader(data, config)
 
-    #id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
-    #id_to_char = {id_: char for char, id_ in char_to_id.items()}
+    id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
+    id_to_char = {id_: char for char, id_ in char_to_id.items()}
 
     print('Creating model...')
     model = BidafModel.from_config(config['bidaf'], id_to_token, id_to_char, max_p=max_passage_length)
@@ -185,10 +160,9 @@ def init_state(config, args):
 
     if torch.cuda.is_available() and args.cuda:
         if False and torch.cuda.device_count() > 1:
-            model.to(torch.device("cuda:0"))
+            model.to(torch.device('cuda:0'))
             model = torch.nn.DataParallel(model)
         else:
-            #model.cuda()
             model.to(torch.device('cuda:0'))
 
     model.train()
@@ -202,7 +176,7 @@ def train(epoch, model, optimizer, data, args):
     Train for one epoch.
     """
 
-    for batch_id, (_, passages, queries, relevances, _) in enumerate(data):
+    for batch_id, (passages, queries, relevances, _) in enumerate(data):
         predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
         loss = model.get_loss(predicted_relevance, relevances)
         optimizer.zero_grad()
@@ -228,7 +202,7 @@ def main():
                            help="Text file containing pre-trained "
                            "word representations.")
     argparser.add_argument("--cuda",
-                           type=bool, default=torch.cuda.is_available(),    #torch.cuda.is_available()
+                           type=bool, default=torch.cuda.is_available(),
                            help="Use GPU if possible")
     argparser.add_argument("--use_covariance",
                            action="store_true",
@@ -254,9 +228,9 @@ def main():
         model, id_to_token, id_to_char, optimizer, data, max_passage_length = init_state(
             config, args)
         checkpoint = h5py.File(os.path.join(args.dest, 'checkpoint'))
-        #checkpointing.save_vocab(checkpoint, 'vocab', id_to_token)
-        #checkpointing.save_vocab(checkpoint, 'c_vocab', id_to_char)
-        # save max passage length here! not in every epoch
+        checkpointing.save_vocab(checkpoint, 'vocab', id_to_token)
+        checkpointing.save_vocab(checkpoint, 'c_vocab', id_to_char)
+        checkpointing.save_max_passage_length(max_passage_length, checkpoint)
 
     if torch.cuda.is_available() and args.cuda:
         data.tensor_type = torch.cuda.LongTensor
@@ -269,10 +243,10 @@ def main():
 
     for epoch in epochs:
         print('Starting epoch', epoch)
-        print('Model on:', next(model.parameters()).device)
+        #print('Model on:', next(model.parameters()).device)
         train(epoch, model, optimizer, data, args)
         checkpointing.checkpoint(model, epoch, optimizer,
-                   checkpoint, args.dest, max_passage_length)
+                   checkpoint, args.dest)
     print('Training done')
     return
 
