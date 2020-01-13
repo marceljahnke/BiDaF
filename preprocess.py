@@ -7,29 +7,12 @@ import string
 
 import checkpointing
 import h5py
-import numpy as np
-from dataset import tokenize_data
 from tqdm import tqdm
-from collections import Counter
 
 from qa_utils.preprocessing.fiqa import FiQA
 from qa_utils.preprocessing.msmarco import MSMARCO
 from qa_utils.preprocessing.insrqa import InsuranceQA
-from text_input import rich_tokenize
 
-'''
-def tokenize(query, passage, token_to_id, char_to_id):
-    q_tokens, q_chars, _, _, _ = \
-        rich_tokenize(query, token_to_id, char_to_id, update=True)
-    p_tokens, p_chars, _, _, mapping = \
-        rich_tokenize(passage, token_to_id, char_to_id, update=True)
-    p_tokens = np.asarray(p_tokens)
-    p_chars = np.asarray(p_chars)
-    q_tokens = np.asarray(q_tokens)
-    q_chars = np.asarray(q_chars)
-    out = (query, (p_tokens, p_chars), (q_tokens, q_chars), passage, mapping)
-    return out
-'''
 
 def max_words_per_passage(sentences):
     c = 0
@@ -60,118 +43,65 @@ def main():
     elif args.dataset == 'msmarco':
         ds = MSMARCO(args)
 
-    #token_to_id = {'': 0}
-    #char_to_id = {'': 0}
-
     p_word_count = max_words_per_passage(list(ds.docs.values()))
 
     # save h5 data
-    var_int32 = h5py.special_dtype(vlen=np.dtype('int32'))
     dt = h5py.string_dtype(encoding='utf-8')
-    #dt_int_list = h5py.vlen_dtype(np.dtype('int32'))
 
     train_file = os.path.join(args.SAVE, 'train.h5')
     print('writing {}...'.format(train_file))
     with h5py.File(train_file, 'w') as fp:
         # the length corresponds to pairs of positive and negative documents
         train_shape = (len(ds.trainset) * (1 + args.num_neg_examples),)
-        #chars_shape = (len(ds.trainset) * (1 + args.num_neg_examples),)
-        #labels_shape = (len(ds.trainset), 1)
-        #inputs_ds = fp.create_dataset('inputs', train_shape, dtype=var_int32)
         query_ds = fp.create_dataset('queries', train_shape, dtype=dt)
-        #p_tokens_ds = fp.create_dataset('p_token', train_shape, dtype=dt_int_list)
-        #p_chars_ds = fp.create_dataset('p_chars', train_shape, dtype=var_int32)
-        #q_token_ds = fp.create_dataset('q_token', train_shape, dtype=dt_int_list)
-        #q_chars_ds = fp.create_dataset('q_chars', train_shape, dtype=var_int32)
         passages_ds = fp.create_dataset('passages', train_shape, dtype=dt)
-        #mappings_ds = fp.create_dataset('mappings', train_shape, dtype=var_int32)
         labels_ds = fp.create_dataset('labels', train_shape, dtype='int32')
         i = 0
         for query, pos_doc, neg_docs in tqdm(ds.trainset):
-            #inputs_ds[i] = tokenize(query, pos_doc, token_to_id, char_to_id)
-            #t_p = tokenize(query, pos_doc, token_to_id, char_to_id)
             query_ds[i] = query
-            #p_tokens_ds[i] = t_p[1][0]
-            #p_chars_ds[i] = t_p[1][1]
-            #q_token_ds[i] = t_p[2][0]
-            #q_chars_ds[i] = t_p[2][1]
             passages_ds[i] = pos_doc
-            #mappings_ds[i] = t_p[4]
             labels_ds[i] = 1
             i += 1
             for neg_doc in neg_docs:
-                #inputs_ds[i] = tokenize(query, neg_doc, token_to_id, char_to_id)
-                #t_n = tokenize(query, neg_doc, token_to_id, char_to_id)
                 query_ds[i] = query
-                #p_tokens_ds[i] = t_n[1][0]
-                #p_chars_ds[i] = t_n[1][1]
-                #q_token_ds[i] = t_n[2][0]
-                #q_chars_ds[i] = t_n[2][1]
                 passages_ds[i] = neg_doc
-                #mappings_ds[i] = t_n[4]
                 labels_ds[i] = 0
                 i += 1
-        # create and save vocabs
-        #id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
-        #id_to_char = {id_: char for char, id_ in char_to_id.items()}
-        #checkpointing.save_vocab(fp, 'vocab', id_to_token)
-        #checkpointing.save_vocab(fp, 'c_vocab', id_to_char)
         checkpointing.save_max_passage_length(p_word_count, fp)
 
     dev_file = os.path.join(args.SAVE, 'dev.h5')
     print('writing {}...'.format(dev_file))
     with h5py.File(dev_file, 'w') as fp:
         dev_shape = (len(ds.devset),)
-        qid_ds = fp.create_dataset('qids', dev_shape, dtype=var_int32)
+        print(dev_shape)
+        qid_ds = fp.create_dataset('qids', dev_shape, dtype='int32')
         query_ds = fp.create_dataset('queries', dev_shape, dtype=dt)
-        #p_token_chars_ds = fp.create_dataset('p_token_chars', dev_shape, dtype=var_int32)
-        #q_token_chars_ds = fp.create_dataset('q_token_chars', dev_shape, dtype=var_int32)
         passages_ds = fp.create_dataset('passages', dev_shape, dtype=dt)
-        #mappings_ds = fp.create_dataset('mappings', dev_shape, dtype=var_int32)
         labels_ds = fp.create_dataset('labels', dev_shape, dtype='int32')
-        for i, (q_id, query, doc, label) in enumerate(tqdm(ds.devset)):
-            #t_p = tokenize(query, pos_doc, token_to_id, char_to_id)
+        i = 0
+        for _, (q_id, query, doc, label) in enumerate(tqdm(ds.devset)):
             qid_ds[i] = q_id
             query_ds[i] = query
-            #p_token_chars_ds = t_p[1]
-            #q_token_chars_ds = t_p[2]
-            passages_ds[i] = pos_doc
-            #mappings_ds = t_p[4]
+            passages_ds[i] = doc
             labels_ds[i] = label
             i += 1
-        # create and save vocabs
-        #id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
-        #id_to_char = {id_: char for char, id_ in char_to_id.items()}
-        #checkpointing.save_vocab(fp, 'vocab', id_to_token)
-        #checkpointing.save_vocab(fp, 'c_vocab', id_to_char)
         checkpointing.save_max_passage_length(p_word_count, fp)
 
     test_file = os.path.join(args.SAVE, 'test.h5')
     print('writing {}...'.format(test_file))
     with h5py.File(test_file, 'w') as fp:
         test_shape = (len(ds.testset),)
-        qid_ds = fp.create_dataset('queries', dev_shape, dtype=var_int32)
+        qid_ds = fp.create_dataset('qids', test_shape, dtype='int32')
         query_ds = fp.create_dataset('queries', test_shape, dtype=dt)
-        #p_token_chars_ds = fp.create_dataset('p_token_chars', test_shape, dtype=var_int32)
-        #q_token_chars_ds = fp.create_dataset('q_token_chars', test_shape, dtype=var_int32)
         passages_ds = fp.create_dataset('passages', test_shape, dtype=dt)
-        #mappings_ds = fp.create_dataset('mappings', test_shape, dtype=var_int32)
         labels_ds = fp.create_dataset('labels', test_shape, dtype='int32')
-        for i, (q_id, query, doc, label) in enumerate(tqdm(ds.testset)):
-            #t_p = tokenize(query, pos_doc, token_to_id, char_to_id)
+        i = 0
+        for _, (q_id, query, doc, label) in enumerate(tqdm(ds.testset)):
             qid_ds[i] = q_id
             query_ds[i] = query
-            #p_token_chars_ds = t_p[1]
-            #q_token_chars_ds = t_p[2]
-            passages_ds[i] = pos_doc
-            #mappings_ds = t_p[4]
+            passages_ds[i] = doc
             labels_ds[i] = label
             i += 1
-        # create and save vocabs
-        #id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
-        #id_to_char = {id_: char for char, id_ in char_to_id.items()}
-        #checkpointing.save_vocab(fp, 'vocab', id_to_token)
-        #checkpointing.save_vocab(fp, 'c_vocab', id_to_char)
         checkpointing.save_max_passage_length(p_word_count, fp)
 
 
