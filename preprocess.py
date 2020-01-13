@@ -70,12 +70,13 @@ def main():
     print('writing {}...'.format(train_file))
     with h5py.File(train_file, 'w') as fp:
         # the length corresponds to pairs of positive and negative documents
-        train_shape = (len(ds.trainset) * (1 + args.num_neg_examples), 7)
+        train_shape = (len(ds.trainset) * (1 + args.num_neg_examples),)
         token_chars_shape = (len(ds.trainset) * (1 + args.num_neg_examples), 2)
+        #labels_shape = (len(ds.trainset), 1)
         #inputs_ds = fp.create_dataset('inputs', train_shape, dtype=var_int32)
         query_ds = fp.create_dataset('queries', train_shape, dtype=dt)
-        p_token_chars_ds = fp.create_dataset('p_token_chars', train_shape, dtype=var_int32)
-        q_token_chars_ds = fp.create_dataset('q_token_chars', train_shape, dtype=var_int32)
+        p_token_chars_ds = fp.create_dataset('p_token_chars', token_chars_shape, dtype=var_int32)
+        q_token_chars_ds = fp.create_dataset('q_token_chars', token_chars_shape, dtype=var_int32)
         passages_ds = fp.create_dataset('passages', train_shape, dtype=dt)
         mappings_ds = fp.create_dataset('mappings', train_shape, dtype=var_int32)
         labels_ds = fp.create_dataset('labels', train_shape, dtype='int32')
@@ -86,7 +87,7 @@ def main():
             query_ds[i] = t_p[0]
             p_token_chars_ds = t_p[1]
             q_token_chars_ds = t_p[2]
-            passages_ds = t_p[3]
+            passages_ds[i] = pos_doc
             mappings_ds = t_p[4]
             labels_ds[i] = 1
             i += 1
@@ -96,7 +97,7 @@ def main():
                 query_ds[i] = t_n[0]
                 p_token_chars_ds = t_n[1]
                 q_token_chars_ds = t_n[2]
-                passages_ds = t_n[3]
+                passages_ds[i] = neg_doc
                 mappings_ds = t_n[4]
                 labels_ds[i] = 0
                 i += 1

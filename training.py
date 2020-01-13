@@ -133,13 +133,24 @@ def init_state(config, args):
     train_file = 'Save/train.h5'
     with h5py.File(train_file, 'r') as file:
         queries = list(file['queries'])       # als liste ausgeben ?
+        print(type(queries))
+        #print(queries)
         p_token_chars = list(file['p_token_chars'])
+        print('p token chars')
+        print(p_token_chars)
         q_token_chars = list(file['q_token_chars'])
+        print('q token chars')
+        print(q_token_chars)
         passages = list(file['passages'])
+        print(type(passages))
+        #print(passages)
         mappings = list(file['mappings'])
         labels = list(file['labels'])
-        id_to_token = file['vocab']      # evtl direkt als dict gespeichert
+        id_to_token = file['vocab']
+        #print(type(id_to_token))# evtl direkt als dict gespeichert
+        #print(id_to_token)
         id_to_char = file['c_vocab']
+        #print(type(id_to_char))
         max_passage_length = file['max_passage_length']
 
     data = list(zip(queries, p_token_chars, q_token_chars, passages, mappings, labels))
@@ -267,5 +278,5 @@ def main():
 
 
 if __name__ == '__main__':
-    # run with: python experiment/training.py --word_rep ./data/glove.840B.300d.txt ./experiment/ ./data/ ./results/
+    # run with: python training.py --word_rep ./data/glove.840B.300d.txt ./experiment/ ./data/ ./results/
     main()
