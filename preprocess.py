@@ -80,6 +80,7 @@ def main():
         labels_ds = fp.create_dataset('labels', dev_shape, dtype='int32')
         i = 0
         for _, (q_id, query, doc, label) in enumerate(tqdm(ds.devset)):
+            #print(q_id)
             qid_ds[i] = q_id
             query_ds[i] = query
             passages_ds[i] = doc
@@ -97,10 +98,12 @@ def main():
         labels_ds = fp.create_dataset('labels', test_shape, dtype='int32')
         i = 0
         for _, (q_id, query, doc, label) in enumerate(tqdm(ds.testset)):
+            #print(q_id)        #endlos oft die gleiche id hintereinander....
             qid_ds[i] = q_id
             query_ds[i] = query
             passages_ds[i] = doc
             labels_ds[i] = label
+            #print(label)
             i += 1
         checkpointing.save_max_passage_length(p_word_count, fp)
 

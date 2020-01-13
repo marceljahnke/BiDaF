@@ -61,7 +61,7 @@ def reload_state(checkpoint, training_state, config, args):
     len_tok_voc = len(token_to_id)
     len_char_voc = len(char_to_id)
 
-    with open(args.data) as f_o:
+    with open(args.data) as f_o:                                        # hier auch aus h5py
         data, _ = load_data(json.load(f_o),
                             span_only=True, answered_only=True)
     #limit_passage = config.get('training', {}).get('limit')
@@ -109,27 +109,19 @@ def init_state(config, args):
     print(f'Loading data from {train_file}...')
     with h5py.File(train_file, 'r') as file:
         queries = list(file['queries'])
-        #p_token = list(file['p_token'])
-        #p_chars = list(file['p_chars'])
-        #q_token = list(file['q_token'])
-        #q_chars = list(file['q_chars'])
         passages = list(file['passages'])
-        #mappings = list(file['mappings'])
         labels = list(file['labels'])
-        #id_to_token = file['vocab']
-        #id_to_char = file['c_vocab']
         max_passage_length = file['max_passage_length'][()]
-
-    #data = list(zip(queries, zip(p_token, p_chars), zip(q_token, q_chars), passages, mappings, labels))
 
     token_to_id = {'': 0}
     char_to_id = {'': 0}
+    dummy = list(np.arange(0, len(queries)))
 
-    data = list(zip(queries, passages, labels))
+    data = list(zip(dummy, queries, passages, labels))
 
     print('Tokenize data...')
-    data = tokenize_data(data, token_to_id, char_to_id)
-    data = get_loader(data, config)
+    data = tokenize_data(data, token_to_id, char_to_id)     #qids hier nicht enthalten müssen blank oder 0 sein oder so
+    data = get_loader(data, config)     # qids nur bei dev und test set
 
     id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
     id_to_char = {id_: char for char, id_ in char_to_id.items()}
@@ -176,7 +168,7 @@ def train(epoch, model, optimizer, data, args):
     Train for one epoch.
     """
 
-    for batch_id, (passages, queries, relevances, _) in enumerate(data):
+    for batch_id, (_, passages, queries, relevances, _) in enumerate(data):
         predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
         loss = model.get_loss(predicted_relevance, relevances)
         optimizer.zero_grad()

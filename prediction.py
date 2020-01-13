@@ -41,7 +41,7 @@ def reload_state(checkpoint, config, args):
     print('Loading Model...')
     model, id_to_token, id_to_char = BidafModel.from_checkpoint(
         config['bidaf'], checkpoint)
-
+    ''''
     # --------- load TSVs as pandas data frames
     # --------- FiQA
     path_to_passages = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_doc_final.tsv'
@@ -60,7 +60,19 @@ def reload_state(checkpoint, config, args):
     #with pd.option_context('display.max_rows', None):  # more options can be specified also
     #	print(data.iloc[:100])
     # ---------- done loading data
+    '''
 
+    # LOAD DATA FROM H5 FILE (set data and id_to_char/token and max_passage_length)
+    test_file = './data/preprocessed/test.h5'
+    print(f'Loading data from {test_file}...')
+    with h5py.File(test_file, 'r') as file:
+        qids = list(file['qids'])
+        queries = list(file['queries'])
+        passages = list(file['passages'])
+        labels = list(file['labels'])
+        max_passage_length = file['max_passage_length'][()]
+
+    data = list(zip(qids, queries, passages, labels))
     token_to_id = {tok: id_ for id_, tok in id_to_token.items()}
     char_to_id = {char: id_ for id_, char in id_to_char.items()}
 
