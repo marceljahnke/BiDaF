@@ -135,9 +135,9 @@ def get_loader(data, args):
 def evaluate(model, dataloader, k, device):
     result = defaultdict(lambda: ([], []))
     for batch in tqdm(dataloader):
-        q_ids, inputs, labels = batch
-        predictions = model(*inputs).cpu().detach()
-        for q_id, prediction, label in zip(q_ids, predictions, labels):
+        qids, passages, queries, labels = batch
+        predictions = model(passages[:2], passages[2], queries[:2], queries[2]).cpu().detach()
+        for q_id, prediction, label in zip(qids, predictions, labels):
             result[q_id][0].append(prediction)
             result[q_id][1].append(label)
 

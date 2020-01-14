@@ -367,8 +367,8 @@ class EpochGen(object):
             labels = Variable(self.tensor_type(labels))
             #qids = Variable(self.tensor_type(qids))
 
-            #batch = (qids, passages, queries, label, mappings)
-            inputs = (passages[:2], passages[2], queries[:2], queries[2])
-            batch = (qids, inputs, labels)
+            batch = (qids, passages, queries, labels)
+            #inputs = (passages[:2], passages[2], queries[:2], queries[2])
+            #batch = (qids, inputs, labels)
             yield batch
         return

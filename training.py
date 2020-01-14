@@ -156,8 +156,8 @@ def train(epoch, model, optimizer, data, args):
     Train for one epoch.
     """
 
-    for batch_id, (qids, inputs, labels) in enumerate(data):
-        predicted_relevance = model(*inputs)
+    for batch_id, (qids, passages, queries, labels) in enumerate(data):
+        predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
         loss = model.get_loss(predicted_relevance, labels)
         optimizer.zero_grad()
         loss.backward()
