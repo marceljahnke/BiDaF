@@ -12,14 +12,20 @@ from tqdm import tqdm
 from qa_utils.preprocessing.fiqa import FiQA
 from qa_utils.preprocessing.msmarco import MSMARCO
 from qa_utils.preprocessing.insrqa import InsuranceQA
+from text_input import rich_tokenize
 
 
-def max_words_per_passage(sentences):
+def max_words_per_passage(queries, docs):
+    token_to_id = {'': 0}
+    char_to_id = {'': 0}
     c = 0
-    for s in sentences:
-        cc = len(s.translate(str.maketrans('', '', string.punctuation)).split(' '))
-        if cc > c:
-            c = cc
+    for query in queries:
+        #cc = len(s.translate(str.maketrans('', '', string.punctuation)).split(' '))
+        q_tokens, q_chars, _, _, _ = rich_tokenize(query, token_to_id, char_to_id, update=True)
+    for doc in docs:
+        p_tokens, p_chars, _, _, mapping = rich_tokenize(doc, token_to_id, char_to_id, update=True)
+        if len(p_tokens) > c:
+            c = len(p_tokens)
     return c
 
 
@@ -43,7 +49,7 @@ def main():
     elif args.dataset == 'msmarco':
         ds = MSMARCO(args)
 
-    p_word_count = max_words_per_passage(list(ds.docs.values()))
+    p_word_count = max_words_per_passage(list(ds.queries.values()), list(ds.docs.values()))
 
     # save h5 data
     dt = h5py.string_dtype(encoding='utf-8')
