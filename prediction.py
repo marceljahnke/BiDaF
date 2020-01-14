@@ -5,6 +5,8 @@ then train that model.
 """
 import json
 import random
+from collections import defaultdict
+
 import yaml
 import argparse
 import os.path
@@ -12,16 +14,19 @@ import re
 import numpy as np
 import torch
 import h5py
+import math
 import pandas as pd
 from bidaf import BidafModel
+from tqdm import tqdm
 from experiment.dataset import load_data_from_h5, tokenize_data, EpochGen
 from experiment.dataset import SymbolEmbSourceNorm
 from experiment.dataset import SymbolEmbSourceText
 from experiment.dataset import symbol_injection
 
 from import_scripts import fiqa, ms_marco
-from qa_utils.evaluation import evaluate
+from qa_utils.evaluation import get_ranking_metrics
 from qa_utils.misc import Logger
+from sklearn.metrics import accuracy_score
 
 regex_drop_char = re.compile('[^a-z0-9\s]+')
 regex_multi_space = re.compile('\s+')
@@ -127,18 +132,34 @@ def get_loader(data, args):
     return data
 
 
-def predict(model, data):
-    """
-    Train for one epoch.
-    """
-    for batch_id, (qids, passages, queries, relevances, mappings) in enumerate(data):
-        predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
-        predictions = predicted_relevance
-        passages = passages[0].data
-        queries = queries[0].data
-        for qid, query, mapping, tokens, pred, rel in zip(qids, queries, mappings, passages, predictions, relevances):
-            yield (qid, query, tokens, pred, rel)
-    return
+def evaluate(model, dataloader, k, device):
+    result = defaultdict(lambda: ([], []))
+    for batch in tqdm(dataloader):
+        q_ids, inputs, labels = batch
+        predictions = model(*inputs).cpu().detach()
+        for q_id, prediction, label in zip(q_ids.numpy(), predictions.numpy(), labels.numpy()):
+            result[q_id][0].append(prediction[0])
+            result[q_id][1].append(label)
+
+    metric_vals = {}
+
+    all_scores, all_labels = [], []
+    for q_id, (scores, labels) in result.items():
+        all_scores.append(scores)
+        all_labels.append(labels)
+    map_, mrr = get_ranking_metrics(all_scores, all_labels, k)
+    metric_vals['map'] = map_
+    metric_vals['mrr'] = mrr
+
+    def _sigmoid(x):
+        return 1 / (1 + math.exp(-x))
+
+    y_true, y_pred = [], []
+    for scores, labels in result.values():
+        y_true.extend(labels)
+        y_pred.extend([round(_sigmoid(x)) for x in scores])
+    metric_vals['acc'] = accuracy_score(y_true, y_pred)
+    return metric_vals
 
 
 def main():
@@ -183,20 +204,20 @@ def main():
     dev = True
 
     if test:
-        model, id_to_token, id_to_char, test_dl = reload_state(checkpoint, config, args, file='./data/preprocessed/test.h5')
+        model, id_to_token, id_to_char, test_dl = reload_state(checkpoint, config, args, file='/home/jahnke/BiDaF/data/preprocessed/test.h5')
         if torch.cuda.is_available() and args.cuda:
             test_dl.tensor_type = torch.cuda.LongTensor
             with torch.no_grad():
-                test_metrics = evaluate(model, test_dl, args.mrr_k, device, has_multiple_inputs=True)
+                test_metrics = evaluate(model, test_dl, args.mrr_k, device)
         print('Done test set')
 
     if dev:
         model, id_to_token, id_to_char, dev_dl = reload_state(checkpoint, config, args,
-                                                               file='./data/preprocessed/dev.h5')
+                                                               file='/home/jahnke/BiDaF/data/preprocessed/dev.h5')
         if torch.cuda.is_available() and args.cuda:
             dev_dl.tensor_type = torch.cuda.LongTensor
             with torch.no_gard():
-                dev_metrics = evaluate(model, dev_dl, args.mrr_k, device, has_multiple_inputs=True)
+                dev_metrics = evaluate(model, dev_dl, args.mrr_k, device)
         print('Done dev set')
 
     eval_file = os.path.join(args.dest, 'eval.csv')
@@ -204,7 +225,7 @@ def main():
     metrics = list(dev_metrics) + list(test_metrics)
     logger.log(metrics)
 
-    print('Prediction done')
+    print('Evaluation done')
     return
 
 
