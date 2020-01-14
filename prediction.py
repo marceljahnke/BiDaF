@@ -49,7 +49,7 @@ def reload_state(checkpoint, config, args, file):
     model, id_to_token, id_to_char, _ = BidafModel.from_checkpoint(
         config['bidaf'], checkpoint)
 
-    data, _ = load_data_from_h5(file, use_dummy_qids=False)
+    data, _ = load_data_from_h5(file, use_dummy_qids=True)
 
     token_to_id = {tok: id_ for id_, tok in id_to_token.items()}
     char_to_id = {char: id_ for id_, char in id_to_char.items()}
@@ -141,26 +141,11 @@ def evaluate(model, dataloader, k, device):
             result[q_id][0].append(prediction)
             result[q_id][1].append(label)
 
-    metric_vals = {}
-
     all_scores, all_labels = [], []
-    for q_id, (scores, labels) in result.items():
-        all_scores.append(scores)
-        all_labels.append(labels)
-    map_, mrr = get_ranking_metrics(all_scores, all_labels, k)
-    metric_vals['map'] = map_
-    metric_vals['mrr'] = mrr
-
-    def _sigmoid(x):
-        return 1 / (1 + math.exp(-x))
-
-    y_true, y_pred = [], []
-    for scores, labels in result.values():
-        y_true.extend(labels)
-        y_pred.extend([round(_sigmoid(x)) for x in scores])
-    metric_vals['acc'] = accuracy_score(y_true, y_pred)
-    return metric_vals
-
+    for q_id, (score, label) in result.items():
+        all_scores.append(score)
+        all_labels.append(label)
+    return get_ranking_metrics(all_scores, all_labels, k)
 
 def main():
     """
@@ -222,7 +207,9 @@ def main():
 
     eval_file = os.path.join(args.dest, 'eval.csv')
     logger = Logger(eval_file, ['dev_map', 'dev_mrr', 'test_map', 'test_mrr'])
+    #logger = Logger(eval_file, ['test_map', 'test_mrr'])
     metrics = list(dev_metrics) + list(test_metrics)
+    #metrics = list(test_metrics)
     logger.log(metrics)
 
     print('Evaluation done')

@@ -19,7 +19,7 @@ def load_data_from_h5(file, use_dummy_qids=False):
     print(f'Loading data from {file}...')
     with h5py.File(file, 'r') as fp:
         queries = list(fp['queries'])
-        qids = list(np.ones((len(queries),)) * -1) if use_dummy_qids else list(fp['qids'])
+        qids = list(np.ones((len(queries),))) if use_dummy_qids else list(fp['qids'])
         passages = list(fp['passages'])
         labels = list(fp['labels'])
         max_passage_length = fp['max_passage_length'][()]
