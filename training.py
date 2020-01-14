@@ -17,7 +17,7 @@ import h5py
 from bidaf import BidafModel
 
 import experiment.checkpointing as checkpointing
-from experiment.dataset import load_data, tokenize_data, EpochGen
+from experiment.dataset import tokenize_data, EpochGen, load_data_from_h5
 from experiment.dataset import SymbolEmbSourceNorm
 from experiment.dataset import SymbolEmbSourceText
 from experiment.dataset import symbol_injection
@@ -47,7 +47,7 @@ def reload_state(checkpoint, training_state, config, args):
     """
     Reload state when resuming training.
     """
-    model, id_to_token, id_to_char = BidafModel.from_checkpoint(
+    model, id_to_token, id_to_char, max_passage_length = BidafModel.from_checkpoint(
         config['bidaf'], checkpoint)
     if torch.cuda.is_available() and args.cuda:
         model.cuda()
@@ -61,11 +61,9 @@ def reload_state(checkpoint, training_state, config, args):
     len_tok_voc = len(token_to_id)
     len_char_voc = len(char_to_id)
 
-    with open(args.data) as f_o:                                        # hier auch aus h5py
-        data, _ = load_data(json.load(f_o),
-                            span_only=True, answered_only=True)
-    #limit_passage = config.get('training', {}).get('limit')
-    data, max_passage_length = tokenize_data(data, token_to_id, char_to_id)
+    file = './data/preprocessed/train.h5'
+    data, _ = load_data_from_h5(file, use_dummy_qids=True)
+    data = tokenize_data(data, token_to_id, char_to_id)
 
     data = get_loader(data, config)
 
@@ -104,24 +102,14 @@ def get_loader(data, config):
 
 def init_state(config, args):
 
-    # LOAD DATA FROM H5 FILE (set data and id_to_char/token and max_passage_length)
-    train_file = './data/preprocessed/train.h5'
-    print(f'Loading data from {train_file}...')
-    with h5py.File(train_file, 'r') as file:
-        queries = list(file['queries'])
-        passages = list(file['passages'])
-        labels = list(file['labels'])
-        max_passage_length = file['max_passage_length'][()]
-
+    file = './data/preprocessed/train.h5'
     token_to_id = {'': 0}
     char_to_id = {'': 0}
-    dummy = list(np.arange(0, len(queries)))
-
-    data = list(zip(dummy, queries, passages, labels))
+    data, max_passage_length = load_data_from_h5(file, use_dummy_qids=True)
 
     print('Tokenize data...')
-    data = tokenize_data(data, token_to_id, char_to_id)     #qids hier nicht enthalten müssen blank oder 0 sein oder so
-    data = get_loader(data, config)     # qids nur bei dev und test set
+    data = tokenize_data(data, token_to_id, char_to_id)
+    data = get_loader(data, config)
 
     id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
     id_to_char = {id_: char for char, id_ in char_to_id.items()}
@@ -168,9 +156,9 @@ def train(epoch, model, optimizer, data, args):
     Train for one epoch.
     """
 
-    for batch_id, (_, passages, queries, relevances, _) in enumerate(data):
-        predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
-        loss = model.get_loss(predicted_relevance, relevances)
+    for batch_id, (qids, inputs, labels) in enumerate(data):
+        predicted_relevance = model(*inputs)
+        loss = model.get_loss(predicted_relevance, labels)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -187,14 +175,14 @@ def main():
     argparser.add_argument("dest", help="Destination folder")
     argparser.add_argument("--force_restart",
                            action="store_true",
-                           default=False,
+                           default=torch.cuda.is_available(),
                            help="Force restart of experiment: "
                            "will ignore checkpoints")
     argparser.add_argument("--word_rep",
                            help="Text file containing pre-trained "
                            "word representations.")
     argparser.add_argument("--cuda",
-                           type=bool, default=torch.cuda.is_available(),
+                           type=bool, default=False,
                            help="Use GPU if possible")
     argparser.add_argument("--use_covariance",
                            action="store_true",
@@ -209,7 +197,7 @@ def main():
 
 
     checkpoint, training_state, epoch = try_to_resume(
-            args.force_restart, args.exp_folder)
+            args.force_restart, args.dest)
 
     if checkpoint:
         print('Resuming training...')
@@ -235,7 +223,6 @@ def main():
 
     for epoch in epochs:
         print('Starting epoch', epoch)
-        #print('Model on:', next(model.parameters()).device)
         train(epoch, model, optimizer, data, args)
         checkpointing.checkpoint(model, epoch, optimizer,
                    checkpoint, args.dest)

@@ -6,6 +6,7 @@ Module used to manage data:
     pre-trained embeddings)
     Conversion into Dataset for training, etc.
 """
+import h5py
 import torch
 from torch.autograd import Variable
 import numpy as np
@@ -13,6 +14,18 @@ import pandas as pd
 from pandas import DataFrame
 
 from text_input import rich_tokenize
+
+def load_data_from_h5(file, use_dummy_qids=False):
+    print(f'Loading data from {file}...')
+    with h5py.File(file, 'r') as fp:
+        queries = list(fp['queries'])
+        qids = list(np.ones((len(queries),)) * -1) if use_dummy_qids else list(fp['qids'])
+        passages = list(fp['passages'])
+        labels = list(fp['labels'])
+        max_passage_length = fp['max_passage_length'][()]
+
+    data = list(zip(qids, queries, passages, labels))
+    return data, max_passage_length
 
 def load_data(source, span_only, answered_only):
     """
@@ -119,9 +132,6 @@ def tokenize_data(data, token_to_id, char_to_id, limit=None):
             # Passage is too long, but it can be trimmed.
             p_tokens = p_tokens[:limit]
 
-        if len(p_tokens) > max_p_tokens_num:
-            max_p_tokens_num = len(p_tokens)
-
         tokenized.append(
             (
                 qid,
@@ -131,7 +141,7 @@ def tokenize_data(data, token_to_id, char_to_id, limit=None):
                 mapping
             )
         )
-    return tokenized, max_p_tokens_num
+    return tokenized
 
 
 def symbol_injection(id_to_symb, start_at, embedding,
@@ -346,17 +356,19 @@ class EpochGen(object):
             c_passages = [self.data[ind][1][1] for ind in batch_idx]
             queries = [self.data[ind][2][0] for ind in batch_idx]
             c_queries = [self.data[ind][2][1] for ind in batch_idx]
-            label = [self.data[ind][3] for ind in batch_idx]
-            mappings = [self.data[ind][4] for ind in batch_idx]
+            labels = [self.data[ind][3] for ind in batch_idx]
+            #mappings = [self.data[ind][4] for ind in batch_idx]
 
             passages = self.process_batch_for_length(
                     passages, c_passages)
             queries = self.process_batch_for_length(
                     queries, c_queries)
 
-            label = Variable(self.tensor_type(label))
-            qids = Variable(self.tensor_type(qids))
+            labels = Variable(self.tensor_type(labels))
+            #qids = Variable(self.tensor_type(qids))
 
-            batch = (qids, passages, queries, label, mappings)
+            #batch = (qids, passages, queries, label, mappings)
+            inputs = (passages[:2], passages[2], queries[:2], queries[2])
+            batch = (qids, inputs, labels)
             yield batch
         return
