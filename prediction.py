@@ -14,12 +14,14 @@ import torch
 import h5py
 import pandas as pd
 from bidaf import BidafModel
-from experiment.dataset import load_data, tokenize_data, EpochGen
+from experiment.dataset import load_data_from_h5, tokenize_data, EpochGen
 from experiment.dataset import SymbolEmbSourceNorm
 from experiment.dataset import SymbolEmbSourceText
 from experiment.dataset import symbol_injection
 
 from import_scripts import fiqa, ms_marco
+from qa_utils.evaluation import evaluate
+from qa_utils.misc import Logger
 
 regex_drop_char = re.compile('[^a-z0-9\s]+')
 regex_multi_space = re.compile('\s+')
@@ -33,57 +35,25 @@ def try_to_resume(exp_folder):
     return checkpoint
 
 
-def reload_state(checkpoint, config, args):
+def reload_state(checkpoint, config, args, file):
     """
     Reload state before predicting.
     """
 
     print('Loading Model...')
-    model, id_to_token, id_to_char = BidafModel.from_checkpoint(
+    model, id_to_token, id_to_char, _ = BidafModel.from_checkpoint(
         config['bidaf'], checkpoint)
-    ''''
-    # --------- load TSVs as pandas data frames
-    # --------- FiQA
-    path_to_passages = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_doc_final.tsv'
-    path_to_queries = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_question_final.tsv'
-    path_to_relevance = '/home/jahnke/BiDaF/data/fiqa/FiQA_train_question_doc_final.tsv'
-    data = fiqa.load_data(path_to_passages, path_to_queries, path_to_relevance)
-    # --------- MS MARCO
-    # path_to_passages = './data/ms_marco/collection.tsv'
-    # path_to_queries = './data/ms_marco/queries.train.tsv'
-    # path_to_relevance = './data/ms_marco/qrels.train.tsv'
-    # data = ms_marco.load_data(path_to_passages, path_to_queries, path_to_relevance)
-    # --------------- Split data into training and test data
-    # max_passage_length = data.passage.map(len).max()
-    data = data.iloc[int(len(data.index) * 0.8):]  # test data
-    print('Generated positive and negative examples: ', len(data.index))
-    #with pd.option_context('display.max_rows', None):  # more options can be specified also
-    #	print(data.iloc[:100])
-    # ---------- done loading data
-    '''
 
-    # LOAD DATA FROM H5 FILE (set data and id_to_char/token and max_passage_length)
-    test_file = './data/preprocessed/test.h5'
-    print(f'Loading data from {test_file}...')
-    with h5py.File(test_file, 'r') as file:
-        qids = list(file['qids'])
-        queries = list(file['queries'])
-        passages = list(file['passages'])
-        labels = list(file['labels'])
-        max_passage_length = file['max_passage_length'][()]
+    data = load_data_from_h5(file, use_dummy_qids=False)
 
-    data = list(zip(qids, queries, passages, labels))
     token_to_id = {tok: id_ for id_, tok in id_to_token.items()}
     char_to_id = {char: id_ for id_, char in id_to_char.items()}
 
     len_tok_voc = len(token_to_id)
     len_char_voc = len(char_to_id)
 
-    #with open(args.data) as f_o:
-    #    data, _ = load_data(json.load(f_o), span_only=True, answered_only=True)
-
     print('Tokenizing data...')
-    data, _ = tokenize_data(data, token_to_id, char_to_id)
+    data = tokenize_data(data, token_to_id, char_to_id)
 
     id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
     id_to_char = {id_: char for char, id_ in char_to_id.items()}
@@ -96,7 +66,7 @@ def reload_state(checkpoint, config, args):
                    if id_ >= len_tok_voc)
 
         if args.word_rep:
-            with open(args.word_rep, encoding='utf-8') as f_o: # add  encoding='utf-8' on windows systems
+            with open(args.word_rep, encoding='utf-8') as f_o:
                 pre_trained = SymbolEmbSourceText(
                     f_o, need)
         else:
@@ -161,23 +131,12 @@ def predict(model, data):
     """
     Train for one epoch.
     """
-    #for batch_id, (qids, passages, queries, _, mappings) in enumerate(data):
     for batch_id, (qids, passages, queries, relevances, mappings) in enumerate(data):
-        #print(f"predict for qids: {qids}")
-        #print(f"passages[:2]: {passages[:2]}, passages[2]: {passages[2]}, queries[:2]: {queries[:2]}, queries[2]: {queries[2]}")
         predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
-        #predictions = model.get_best_span(start_log_probs, end_log_probs)
         predictions = predicted_relevance
-        #print(f"size(predictions): {predictions.size()}")
         passages = passages[0].data
         queries = queries[0].data
-        #print(f"size(passages): {passages.size()}")
-        #print("zip: ", zip(qids, queries, mappings, passages, predictions, relevances))
-        #print(f"len(mappings): {len(mappings)}")
-        #print(f"queries.size(): {queries.size()}")
-        #print(f"len(relevances): {len(relevances)}")
         for qid, query, mapping, tokens, pred, rel in zip(qids, queries, mappings, passages, predictions, relevances):
-            #print("yield: ", qid)
             yield (qid, query, tokens, pred, rel)
     return
 
@@ -190,6 +149,7 @@ def main():
     argparser.add_argument("exp_folder", help="Experiment folder")
     argparser.add_argument("data", help="Prediction data")
     argparser.add_argument("dest", help="Write predictions in")
+    argparser.add_argument('--mrr_k', type=int, default=10, help='Compute MRR@k')
     argparser.add_argument("--word_rep",
                            help="Text file containing pre-trained "
                                 "word representations.")
@@ -213,43 +173,37 @@ def main():
 
     checkpoint = try_to_resume(args.dest)
 
-    if checkpoint:
-        model, id_to_token, id_to_char, data = reload_state(
-            checkpoint, config, args)
-    else:
+    if not checkpoint:
         print('Need a valid checkpoint to predict.')
         return
 
-    if torch.cuda.is_available() and args.cuda:
-        data.tensor_type = torch.cuda.LongTensor
-    qid2candidate = {}
-    #for qid, toks, start, end in predict(model, data):
-    for qid, query, toks, pred, rel in predict(model, data):
-        '''
-        toks = regex_multi_space.sub(' ', regex_drop_char.sub(' ', ' '.join(
-            id_to_token[int(tok)] for tok in toks).lower())).strip()
-        # print(repr(qid), repr(toks), start, end, file=f_o)
-        output = '{\"query_id\": ' + qid + ',\"answers\":[ \"' + toks + '\"]}'
-        '''
-        #print(f"Types of:\nqid: {type(qid)}\nquery: {type(query)}\ntokens; {type(tokens)}\npred: {type(pred)}\nrel: {type(rel)}")
-        toks = regex_multi_space.sub(' ', regex_drop_char.sub(' ', ' '.join(id_to_token[int(tok)] for tok in toks).lower())).strip()
-        #query = regex_multi_space.sub(' ', regex_drop_char.sub(' ', ' '.join(id_to_token[int(q)] for q in query).lower())).strip()
-        #output = "{\"query_id\": " + str(qid) + ", \"passage\": [\"" + toks + "\"], \"predicted relevance\":  " + str(pred.item()) + ", \"actual relevance\": " + str(rel.item()) + "}"
-        output = "{\"query_id\": " + str(qid) + ", \"p_rel\": " + str(pred.item()) + ", \"a_rel\": " + str(rel.item()) + "}"
-        print(output)
-        if qid not in qid2candidate:
-            qid2candidate[qid] = []
-        qid2candidate[qid].append(json.dumps(json.loads(output)))
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    result = {'result': qid2candidate}
-    with open(args.dest + 'predictions.txt', 'w') as file:
-        file.write(json.dumps(result))
+    test = True
+    dev = True
 
-    #with open(args.dest, 'w') as f_o:
-    #    for qid in qid2candidate:
-    #        pick = random.randint(0, len(qid2candidate[qid]) - 1)
-    #        f_o.write(qid2candidate[qid][pick])
-    #        f_o.write('\n')
+    if test:
+        model, id_to_token, id_to_char, test_dl = reload_state(checkpoint, config, args, file='./data/preprocessed/test.h5')
+        if torch.cuda.is_available() and args.cuda:
+            test_dl.tensor_type = torch.cuda.LongTensor
+            with torch.no_grad():
+                test_metrics = evaluate(model, test_dl, args.mrr_k, device, has_multiple_inputs=True)
+        print('Done test set')
+
+    if dev:
+        model, id_to_token, id_to_char, dev_dl = reload_state(checkpoint, config, args,
+                                                               file='./data/preprocessed/dev.h5')
+        if torch.cuda.is_available() and args.cuda:
+            dev_dl.tensor_type = torch.cuda.LongTensor
+            with torch.no_gard():
+                dev_metrics = evaluate(model, dev_dl, args.mrr_k, device, has_multiple_inputs=True)
+        print('Done dev set')
+
+    eval_file = os.path.join(args.dest, 'eval.csv')
+    logger = Logger(eval_file, ['dev_map', 'dev_mrr', 'test_map', 'test_mrr'])
+    metrics = list(dev_metrics) + list(test_metrics)
+    logger.log(metrics)
+
     print('Prediction done')
     return
 
