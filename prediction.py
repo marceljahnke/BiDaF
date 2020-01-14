@@ -183,7 +183,7 @@ def main():
     dev = True
 
     if test:
-        model, id_to_token, id_to_char, test_dl = reload_state(checkpoint, config, args, file='./data/preprocessed/test.h5')
+        model, id_to_token, id_to_char, test_dl = reload_state(checkpoint, config, args, file='/home/jahnke/BiDaF/data/preprocessed/test.h5')
         if torch.cuda.is_available() and args.cuda:
             test_dl.tensor_type = torch.cuda.LongTensor
             with torch.no_grad():
@@ -192,7 +192,7 @@ def main():
 
     if dev:
         model, id_to_token, id_to_char, dev_dl = reload_state(checkpoint, config, args,
-                                                               file='./data/preprocessed/dev.h5')
+                                                               file='/home/jahnke/BiDaF/data/preprocessed/dev.h5')
         if torch.cuda.is_available() and args.cuda:
             dev_dl.tensor_type = torch.cuda.LongTensor
             with torch.no_gard():
