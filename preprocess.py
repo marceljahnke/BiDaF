@@ -5,7 +5,7 @@ import os
 import argparse
 import string
 
-import checkpointing
+import experiment.checkpointing as checkpointing
 import h5py
 from tqdm import tqdm
 
