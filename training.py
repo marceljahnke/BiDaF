@@ -61,7 +61,7 @@ def reload_state(checkpoint, training_state, config, args):
     len_tok_voc = len(token_to_id)
     len_char_voc = len(char_to_id)
 
-    file = './data/preprocessed/train.h5'
+    file = '/home/jahnke/BiDaF/data/preprocessed/train.h5'
     data, _ = load_data_from_h5(file, use_dummy_qids=True)
     data = tokenize_data(data, token_to_id, char_to_id)
 
@@ -102,7 +102,7 @@ def get_loader(data, config):
 
 def init_state(config, args):
 
-    file = './data/preprocessed/train.h5'
+    file = '/home/jahnke/BiDaF/data/preprocessed/train.h5'
     token_to_id = {'': 0}
     char_to_id = {'': 0}
     data, max_passage_length = load_data_from_h5(file, use_dummy_qids=True)
@@ -182,7 +182,7 @@ def main():
                            help="Text file containing pre-trained "
                            "word representations.")
     argparser.add_argument("--cuda",
-                           type=bool, default=False,
+                           type=bool, default=torch.cuda.is_available(),
                            help="Use GPU if possible")
     argparser.add_argument("--use_covariance",
                            action="store_true",
