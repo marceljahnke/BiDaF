@@ -137,8 +137,8 @@ def evaluate(model, dataloader, k, device):
     for batch in tqdm(dataloader):
         q_ids, inputs, labels = batch
         predictions = model(*inputs).cpu().detach()
-        for q_id, prediction, label in zip(q_ids.numpy(), predictions.numpy(), labels.numpy()):
-            result[q_id][0].append(prediction[0])
+        for q_id, prediction, label in zip(q_ids, predictions, labels):
+            result[q_id][0].append(prediction)
             result[q_id][1].append(label)
 
     metric_vals = {}
