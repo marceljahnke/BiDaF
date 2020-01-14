@@ -44,7 +44,7 @@ def reload_state(checkpoint, config, args, file):
     model, id_to_token, id_to_char, _ = BidafModel.from_checkpoint(
         config['bidaf'], checkpoint)
 
-    data = load_data_from_h5(file, use_dummy_qids=False)
+    data, _ = load_data_from_h5(file, use_dummy_qids=False)
 
     token_to_id = {tok: id_ for id_, tok in id_to_token.items()}
     char_to_id = {char: id_ for id_, char in id_to_char.items()}
@@ -53,7 +53,7 @@ def reload_state(checkpoint, config, args, file):
     len_char_voc = len(char_to_id)
 
     print('Tokenizing data...')
-    data, _ = tokenize_data(data, token_to_id, char_to_id)
+    data = tokenize_data(data, token_to_id, char_to_id)
 
     id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
     id_to_char = {id_: char for char, id_ in char_to_id.items()}
@@ -183,7 +183,7 @@ def main():
     dev = True
 
     if test:
-        model, id_to_token, id_to_char, test_dl = reload_state(checkpoint, config, args, file='/home/jahnke/BiDaF/data/preprocessed/test.h5')
+        model, id_to_token, id_to_char, test_dl = reload_state(checkpoint, config, args, file='./data/preprocessed/test.h5')
         if torch.cuda.is_available() and args.cuda:
             test_dl.tensor_type = torch.cuda.LongTensor
             with torch.no_grad():
@@ -192,7 +192,7 @@ def main():
 
     if dev:
         model, id_to_token, id_to_char, dev_dl = reload_state(checkpoint, config, args,
-                                                               file='/home/jahnke/BiDaF/data/preprocessed/dev.h5')
+                                                               file='./data/preprocessed/dev.h5')
         if torch.cuda.is_available() and args.cuda:
             dev_dl.tensor_type = torch.cuda.LongTensor
             with torch.no_gard():
