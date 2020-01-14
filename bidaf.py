@@ -43,27 +43,9 @@ class BidafModel(nn.Module):
 
         self.fc1 = nn.Linear(self.max_p_length, 512)
         self.fc2 = nn.Linear(512, 1)
-        #self.fc2 = nn.Linear(256, 256)
-        #self.fc3 = nn.Linear(256, 64)
-        #self.fc4 = nn.Linear(64, 1)
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        #self.device = torch.device("cpu") # hotfix for cuda error
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        '''''
-        #hier startprojextion
-        # idea: create FF network to get relevance score
-        self.fc1 = nn.Linear(1024, 512)
-        self.fc2 = nn.Linear(512, 64)
-        self.fc3 = nn.Linear(64, 1)
-        '''
-        #---------- anpassen ---------
-        # Second hidden_size is for extractor.
-        #self.start_projection = nn.Linear(
-        #    4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)
-        #self.end_projection = nn.Linear(
-        #    4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)
-        #----------------------------
 
         if dropout and dropout > 0:
             self.dropout = nn.Dropout(p=dropout)
@@ -205,14 +187,6 @@ class BidafModel(nn.Module):
         """
         Forward pass
         """
-        
-        # Move parameters to GPU
-        #passage = (passage[0].to(self.device), passage[1].to(self.device))
-        #p_lenths = p_lengths.to(self.device)
-        #question = (question[0].to(self.device), question[1].to(self.device))
-        #q_lengths = q_lengths.to(self.device)
-
-	# potential device check (get_device() on cuda tensor tensor.is_cuda) here
 
         # Encode the text
         enc_passage = self._encode(passage, p_lengths)
@@ -243,68 +217,31 @@ class BidafModel(nn.Module):
             enc_passage * question_in_passage,
             enc_passage * passage_in_question],
             dim=2)
-        extracted = self.dropout(self._pack_and_unpack_lstm(#crasht mit cuda
+        extracted = self.dropout(self._pack_and_unpack_lstm(
             merged_passage, p_lengths, self.extractor))
-# ------------------ ändern ---------------------------
+
         # Use the features to get the start point probability vectors.
         # Also use it to as attention over the features.
         start_input = self.dropout(
             torch.cat([merged_passage, extracted], dim=2))
         # [b, p_num_tokens, 4*h] -> [b, n, 1] -> [b, n]
         start_projection = self.start_projection(start_input).squeeze(2)
-        #print("start_projection: ", start_projection.size())
-        start_logits = start_projection * p_mask # + (p_mask - 1) * 1e20
+        start_logits = start_projection * p_mask
         # for all batches that dont contains the pasage with the maximal length -> pad them with -1e20 to maximal length
         if p_num_tokens < self.max_p_length:
-                ext_tensor = torch.zeros((batch_size, self.max_p_length - p_num_tokens)) #* -1e20
+                ext_tensor = torch.zeros((batch_size, self.max_p_length - p_num_tokens))
                 ext_tensor = ext_tensor.to(self.device)
                 start_logits = torch.cat([start_logits, ext_tensor], dim=1)
-        #print("start_logits: ", start_logits.size())
 
-        # full random try
-        # start_prob = torch.sum(start_logits, dim=1).view(batch_size, 1) # [b x 1], column contains sum of all start_logits for each passage
-        # end full random
-
-        # Mask
-
-        #start_prob = nn.functional.log_softmax(start_logits, dim=1)
-        #print("start_prob: ", start_prob.size())
-        #start_logits = nn.functional.log_softmax(start_logits, dim=1)
-        #x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
-        #x = self.dropout(nn.functional.relu(self.fc2(x)))
-        #x = self.dropout(nn.functional.relu(self.fc3(x)))
-        
-        #print(f"start_logits contains NaN values: {start_logits != start_logits}, tensor: {start_logits}")
         x = nn.functional.relu(self.fc1(start_logits))
-        #print(f"first layer contains NaN values: {x != x}, tensor: {x}")
         relevance_score = torch.sigmoid(self.fc2(x))
-        #print(relevance_score)
-        '''''
-        # Anpassung:
-        x = self.dropout(nn.functional.relu(self.fc1(start_logits)))
-        x = self.dropout(nn.functional.relu(self.fc2(x)))
-        x = self.fc3(x)
-        relevance_score = nn.functional.log_softmax(x, dim=1)
-        '''
+
         return relevance_score.squeeze() # [b x 1] -> [b]
 # -------------------------- ändern -----------------------------------
     @classmethod
     def get_loss(cls, predicted_relevance, relevance):
-        """
-        Get the loss, $-\log P(s|p,q)P(e|p,q)$.
-        The start and end labels are expected to be in span format,
-        so that text[start:end] is the answer.
-        """
-        # print("size of predicted: ", predicted_relevance.size())
-        # print("size of actual: ", relevance.size())
-        # Subtracts 1 from the end points, to get the exact indices, not 1
-        # after the end.
-        # loss = nll_loss(start_log_probs, starts) + nll_loss(end_log_probs, ends - 1)
-
-        #loss = nn.BCELoss(predicted_relevance, relevance.float())
         loss = nn.BCELoss()
         output = loss(predicted_relevance, relevance.float())
-        #print(f"loss: {output}")
         return output
 
     @classmethod
@@ -462,7 +399,7 @@ class BidafModel(nn.Module):
             for name, val in
             checkpoint['model'].items()})
         model.cpu().eval()
-        return model, model_vocab, model_c_vocab
+        return model, model_vocab, model_c_vocab, max_passage_length
 
 
 class AttentionMatrix(nn.Module):
