@@ -1,4 +1,0 @@
-/home/jahnke/BiDaF/prediction.py:200: YAMLLoadWarning: calling yaml.load() without Loader=... is deprecated, as the default Loader is unsafe. Please read https://msg.pyyaml.org/load for full details.
-  config = yaml.load(f)
-/usr/local/lib/python3.7/dist-packages/torch/nn/modules/rnn.py:51: UserWarning: dropout option adds dropout after all but last recurrent layer, so non-zero dropout expects num_layers greater than 1, but got dropout=0.2 and num_layers=1
-  "num_layers={}".format(dropout, num_layers))

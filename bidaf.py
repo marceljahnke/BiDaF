@@ -41,8 +41,9 @@ class BidafModel(nn.Module):
 
         self.start_projection = nn.Linear(4 * self.bidir_hidden_size + self.bidir_hidden_size, 1)
 
-        self.fc1 = nn.Linear(self.max_p_length, 512)
-        self.fc2 = nn.Linear(512, 1)
+        self.fc1 = nn.Linear(self.max_p_length, 1024)
+        self.fc2 = nn.Linear(1024, 512)
+        self.fc3 = nn.Linear(512, 1)
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -234,10 +235,11 @@ class BidafModel(nn.Module):
                 start_logits = torch.cat([start_logits, ext_tensor], dim=1)
 
         x = nn.functional.relu(self.fc1(start_logits))
-        relevance_score = torch.sigmoid(self.fc2(x))
+        x = nn.functional.relu(self.fc2(x))
+        relevance_score = torch.sigmoid(self.f3(x))
 
         return relevance_score.squeeze() # [b x 1] -> [b]
-# -------------------------- ändern -----------------------------------
+
     @classmethod
     def get_loss(cls, predicted_relevance, relevance):
         loss = nn.BCELoss()
@@ -341,7 +343,7 @@ class BidafModel(nn.Module):
             num_chars,
             _config.get('dim', 16),
             _config.get('num_filters', 100),
-            _config.get('filter_sizes', [5]))
+            _config.get('filter_sizes', [4]))
         args = (
             CatEmbedding([token_embs, char_embs]),
             config.get('num_highways', 2),

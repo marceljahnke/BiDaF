@@ -189,13 +189,14 @@ def main():
                            default=False,
                            help="Do not assume diagonal covariance matrix "
                            "when generating random word representations.")
+    argparser.add_argument("--seed", default=12345, help="Seed for Pytorch")
 
     args = argparser.parse_args()
     config_filepath = os.path.join(args.exp_folder, 'config.yaml')
     with open(config_filepath) as f:
         config = yaml.load(f)
 
-
+    torch.manual_seed(args.seed)
     checkpoint, training_state, epoch = try_to_resume(
             args.force_restart, args.dest)
 

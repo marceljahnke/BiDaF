@@ -49,7 +49,7 @@ def reload_state(checkpoint, config, args, file):
     model, id_to_token, id_to_char, _ = BidafModel.from_checkpoint(
         config['bidaf'], checkpoint)
 
-    data, _ = load_data_from_h5(file, use_dummy_qids=True)
+    data, _ = load_data_from_h5(file, use_dummy_qids=False)
 
     token_to_id = {tok: id_ for id_, tok in id_to_token.items()}
     char_to_id = {char: id_ for id_, char in id_to_char.items()}
@@ -170,6 +170,7 @@ def main():
                            default=False,
                            help="Do not assume diagonal covariance matrix "
                                 "when generating random word representations.")
+    argparser.add_argument("--seed", default=12345, help="Seed for Pytorch")
 
     args = argparser.parse_args()
 
@@ -177,6 +178,7 @@ def main():
     with open(config_filepath) as f:
         config = yaml.load(f)
 
+    torch.manual_seed(args.seed)
     checkpoint = try_to_resume(args.dest)
 
     if not checkpoint:
@@ -201,15 +203,13 @@ def main():
                                                                file='/home/jahnke/BiDaF/data/preprocessed/dev.h5')
         if torch.cuda.is_available() and args.cuda:
             dev_dl.tensor_type = torch.cuda.LongTensor
-            with torch.no_gard():
+            with torch.no_grad():
                 dev_metrics = evaluate(model, dev_dl, args.mrr_k, device)
         print('Done dev set')
 
     eval_file = os.path.join(args.dest, 'eval.csv')
     logger = Logger(eval_file, ['dev_map', 'dev_mrr', 'test_map', 'test_mrr'])
-    #logger = Logger(eval_file, ['test_map', 'test_mrr'])
-    metrics = list(dev_metrics) + list(test_metrics)
-    #metrics = list(test_metrics)
+    metrics = list(test_metrics) + list(dev_metrics)
     logger.log(metrics)
 
     print('Evaluation done')

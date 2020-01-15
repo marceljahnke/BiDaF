@@ -50,6 +50,13 @@ class CharEmbedding(nn.Module):
         Encode the tokens based on the characters.
         """
         batch, num_tokens, num_chars = characters.size()
+        if num_chars < max(self.filter_sizes):
+            # prevent input size < kernel/filter si, pad characters
+            pad = torch.zeros(batch, num_tokens, max(self.filter_sizes))
+            pad[: ,: ,:num_chars] = characters
+            characters = pad.long().cuda()
+            _, _, num_chars = characters.size()
+
         char_emb = self.embeddings(
             characters.view(batch*num_tokens, num_chars))
         # char_emb: [b*t, c, emb]
