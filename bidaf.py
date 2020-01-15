@@ -1,6 +1,4 @@
-import torch
-from torch import nn
-from torch.nn.functional import nll_loss, binary_cross_entropy_with_logits
+from torch.nn.functional import nll_loss
 from torch.autograd import Variable
 import numpy as np
 from highway import *

@@ -10,8 +10,6 @@ import h5py
 import torch
 from torch.autograd import Variable
 import numpy as np
-import pandas as pd
-from pandas import DataFrame
 
 from text_input import rich_tokenize
 

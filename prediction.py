@@ -23,7 +23,6 @@ from experiment.dataset import SymbolEmbSourceNorm
 from experiment.dataset import SymbolEmbSourceText
 from experiment.dataset import symbol_injection
 
-from import_scripts import fiqa, ms_marco
 from qa_utils.evaluation import get_ranking_metrics
 from qa_utils.misc import Logger
 from sklearn.metrics import accuracy_score

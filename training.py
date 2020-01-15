@@ -3,14 +3,12 @@
 Training script: load a config file, create a new model using it,
 then train that model.
 """
-import json
 import yaml
 import argparse
 import os.path
 import itertools
 
 import numpy as np
-import pandas as pd
 import torch
 import torch.optim as optim
 import h5py
@@ -21,9 +19,6 @@ from experiment.dataset import tokenize_data, EpochGen, load_data_from_h5
 from experiment.dataset import SymbolEmbSourceNorm
 from experiment.dataset import SymbolEmbSourceText
 from experiment.dataset import symbol_injection
-
-import import_scripts.ms_marco as ms
-import import_scripts.fiqa as fiqa
 
 
 def try_to_resume(force_restart, exp_folder):

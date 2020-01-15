@@ -3,7 +3,6 @@
 
 import os
 import argparse
-import string
 
 import experiment.checkpointing as checkpointing
 import h5py
@@ -12,6 +11,7 @@ from tqdm import tqdm
 from qa_utils.preprocessing.fiqa import FiQA
 from qa_utils.preprocessing.msmarco import MSMARCO
 from qa_utils.preprocessing.insrqa import InsuranceQA
+from qa_utils.preprocessing.antique import Antique
 from text_input import rich_tokenize
 
 
@@ -20,7 +20,6 @@ def max_words_per_passage(queries, docs):
     char_to_id = {'': 0}
     c = 0
     for query in queries:
-        #cc = len(s.translate(str.maketrans('', '', string.punctuation)).split(' '))
         q_tokens, q_chars, _, _, _ = rich_tokenize(query, token_to_id, char_to_id, update=True)
     for doc in docs:
         p_tokens, p_chars, _, _, mapping = rich_tokenize(doc, token_to_id, char_to_id, update=True)
@@ -48,6 +47,8 @@ def main():
         ds = InsuranceQA(args)
     elif args.dataset == 'msmarco':
         ds = MSMARCO(args)
+    elif args.dataset == 'antique':
+        ds = Antique(args)
 
     p_word_count = max_words_per_passage(list(ds.queries.values()), list(ds.docs.values()))
 
