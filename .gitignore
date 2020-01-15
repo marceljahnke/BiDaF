@@ -1,4 +1,7 @@
 data/
 experiment/__pycache__
+results/checkpoint
+results/checkpoint.opt
 __pycache__/
 .idea/
+log/
