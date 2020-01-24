@@ -127,7 +127,7 @@ optional arguments:
 Example:
 
 ```
-path/to/prediction.py path/to/Bidaf/experiment path/to/BiDaF/data path/to/Bidaf/results --word_rep path/to/glove.840B.300d.txt --mrr_k k
+path/to/prediction.py path/to/Bidaf/experiment path/to/BiDaF/data path/to/Bidaf/results --word_rep path/to/glove.840B.300d.txt
 ```
 
 The result will be written as a csv file in the `results` folder, containing the information about MRR@K and MAP.
