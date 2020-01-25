@@ -10,6 +10,7 @@ import h5py
 import torch
 from torch.autograd import Variable
 import numpy as np
+from tqdm import tqdm
 
 from text_input import rich_tokenize
 
@@ -118,12 +119,22 @@ def tokenize_data(data, token_to_id, char_to_id, limit=None):
     Answer indexes are start:stop range of tokens.
     """
     tokenized = []
-    max_p_tokens_num = 0
-    for (qid, query, passage, label) in data:
-        q_tokens, q_chars, _, _, _ = \
-            rich_tokenize(query, token_to_id, char_to_id, update=True)
-        p_tokens, p_chars, _, _, mapping = \
-            rich_tokenize(passage, token_to_id, char_to_id, update=True)
+    p_tokenized = {}
+    q_tokenized = {}
+    for (qid, query, passage, label) in tqdm(data):
+        if query in q_tokenized:
+            q_tokens, q_chars = q_tokenized[query]
+        else:
+            q_tokens, q_chars, _, _, _ = \
+                rich_tokenize(query, token_to_id, char_to_id, update=True)
+            q_tokenized[query] = (q_tokens, q_chars)
+
+        if passage in p_tokenized:
+            p_tokens, p_chars, mapping = p_tokenized[passage]
+        else:
+            p_tokens, p_chars, _, _, mapping = \
+                rich_tokenize(passage, token_to_id, char_to_id, update=True)
+            p_tokenized[passage] = (p_tokens, p_chars, mapping)
 
         # Keep or not based on length of passage.
         if limit is not None and len(p_tokens) > limit:
