@@ -186,6 +186,10 @@ class BidafModel(nn.Module):
         """
         Forward pass
         """
+        
+        self.seq_encoder.flatten_parameters()
+        self.extractor.flatten_parameters()
+        self.end_encoder.flatten_parameters()
 
         # Encode the text
         enc_passage = self._encode(passage, p_lengths)
@@ -234,7 +238,7 @@ class BidafModel(nn.Module):
 
         x = nn.functional.relu(self.fc1(start_logits))
         x = nn.functional.relu(self.fc2(x))
-        relevance_score = torch.sigmoid(self.f3(x))
+        relevance_score = torch.sigmoid(self.fc3(x))
 
         return relevance_score.squeeze() # [b x 1] -> [b]
 

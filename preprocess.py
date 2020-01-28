@@ -38,6 +38,7 @@ def main():
     FiQA.add_subparser(subparsers, 'fiqa')
     MSMARCO.add_subparser(subparsers, 'msmarco')
     InsuranceQA.add_subparser(subparsers, 'insrqa')
+    Antique.add_subparser(subparsers, 'antique')
     args = ap.parse_args()
 
     os.makedirs(args.SAVE, exist_ok=True)

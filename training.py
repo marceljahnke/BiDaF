@@ -13,6 +13,7 @@ import torch
 import torch.optim as optim
 import h5py
 from bidaf import BidafModel
+from tqdm import tqdm
 
 import experiment.checkpointing as checkpointing
 from experiment.dataset import tokenize_data, EpochGen, load_data_from_h5
@@ -45,7 +46,11 @@ def reload_state(checkpoint, training_state, config, args):
     model, id_to_token, id_to_char, max_passage_length = BidafModel.from_checkpoint(
         config['bidaf'], checkpoint)
     if torch.cuda.is_available() and args.cuda:
-        model.cuda()
+        if torch.cuda.device_count() > 1:
+            model.to(torch.device('cuda:0'))
+            model = torch.nn.DataParallel(model)
+        else:
+            model.to(torch.device('cuda:0'))
     model.train()
 
     optimizer = get_optimizer(model, config, training_state)
@@ -134,7 +139,7 @@ def init_state(config, args):
     # Char embeddings are already random, so we don't need to update them.
 
     if torch.cuda.is_available() and args.cuda:
-        if False and torch.cuda.device_count() > 1:
+        if torch.cuda.device_count() > 1:
             model.to(torch.device('cuda:0'))
             model = torch.nn.DataParallel(model)
         else:
@@ -151,9 +156,11 @@ def train(epoch, model, optimizer, data, args):
     Train for one epoch.
     """
 
-    for batch_id, (qids, passages, queries, labels) in enumerate(data):
+    #for batch_id, (qids, passages, queries, labels) in enumerate(data):
+    for batch in tqdm(data):
+        _, passages, queries, labels = batch
         predicted_relevance = model(passages[:2], passages[2], queries[:2], queries[2])
-        loss = model.get_loss(predicted_relevance, labels)
+        loss = model.module.get_loss(predicted_relevance, labels)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -170,7 +177,7 @@ def main():
     argparser.add_argument("dest", help="Destination folder")
     argparser.add_argument("--force_restart",
                            action="store_true",
-                           default=torch.cuda.is_available(),
+                           default=False,
                            help="Force restart of experiment: "
                            "will ignore checkpoints")
     argparser.add_argument("--word_rep",
@@ -220,7 +227,7 @@ def main():
     for epoch in epochs:
         print('Starting epoch', epoch)
         train(epoch, model, optimizer, data, args)
-        checkpointing.checkpoint(model, epoch, optimizer,
+        checkpointing.checkpoint(model.module, epoch, optimizer,
                    checkpoint, args.dest)
     print('Training done')
     return

@@ -15,6 +15,7 @@ import numpy as np
 import torch
 import h5py
 import math
+import sys
 import pandas as pd
 from bidaf import BidafModel
 from tqdm import tqdm
@@ -117,7 +118,8 @@ def reload_state(checkpoint, config, args, file):
                 pre_trained, oovs))
 
     if torch.cuda.is_available() and args.cuda:
-        model.cuda()
+        model.to(torch.device('cuda:0'))
+        model = torch.nn.DataParallel(model)
     model.eval()
 
     return model, id_to_token, id_to_char, data
@@ -159,7 +161,7 @@ def main():
                            help="Text file containing pre-trained "
                                 "word representations.")
     argparser.add_argument("--batch_size",
-                           type=int, default=16,
+                           type=int, default=64,
                            help="Batch size to use")
     argparser.add_argument("--cuda",
                            type=bool, default=torch.cuda.is_available(),
@@ -170,6 +172,7 @@ def main():
                            help="Do not assume diagonal covariance matrix "
                                 "when generating random word representations.")
     argparser.add_argument("--seed", default=12345, help="Seed for Pytorch")
+    argparser.add_argument("--multi_gpu", default=True, help="Use multiple GPUs for evaluation")
 
     args = argparser.parse_args()
 
@@ -208,7 +211,7 @@ def main():
 
     eval_file = os.path.join(args.dest, 'eval.csv')
     logger = Logger(eval_file, ['dev_map', 'dev_mrr', 'test_map', 'test_mrr'])
-    metrics = list(test_metrics) + list(dev_metrics)
+    metrics = list(dev_metrics) + list(test_metrics)
     logger.log(metrics)
 
     print('Evaluation done')
