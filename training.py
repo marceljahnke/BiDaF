@@ -62,9 +62,7 @@ def reload_state(checkpoint, training_state, config, args):
     len_char_voc = len(char_to_id)
 
     file = '/home/jahnke/BiDaF/data/preprocessed/train.h5'
-    data, _ = load_data_from_h5(file, use_dummy_qids=True)
-    data = tokenize_data(data, token_to_id, char_to_id)
-
+    data, _, _, _ = load_data_from_h5(file, use_dummy_qids=True)
     data = get_loader(data, config)
 
     assert len(token_to_id) == len_tok_voc
@@ -102,17 +100,11 @@ def get_loader(data, config):
 
 def init_state(config, args):
 
-    file = '/home/jahnke/BiDaF/data/preprocessed/train.h5'
-    token_to_id = {'': 0}
-    char_to_id = {'': 0}
-    data, max_passage_length = load_data_from_h5(file, use_dummy_qids=True)
+    file = 'home/jahnke/BiDaF/data/preprocessed/train.h5'
+    data, id_to_token, id_to_char, max_passage_length = load_data_from_h5(file, use_dummy_qids=True)
 
-    print('Tokenize data...')
-    data = tokenize_data(data, token_to_id, char_to_id)
+    print('Create data loader...')
     data = get_loader(data, config)
-
-    id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
-    id_to_char = {id_: char for char, id_ in char_to_id.items()}
 
     print('Creating model...')
     model = BidafModel.from_config(config['bidaf'], id_to_token, id_to_char, max_p=max_passage_length)

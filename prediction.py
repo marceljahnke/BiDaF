@@ -49,16 +49,14 @@ def reload_state(checkpoint, config, args, file):
     model, id_to_token, id_to_char, _ = BidafModel.from_checkpoint(
         config['bidaf'], checkpoint)
 
-    data, _ = load_data_from_h5(file, use_dummy_qids=False)
+    print('Loading data...')
+    data, _, _, _ = load_data_from_h5(file, use_dummy_qids=False)
 
     token_to_id = {tok: id_ for id_, tok in id_to_token.items()}
     char_to_id = {char: id_ for id_, char in id_to_char.items()}
 
     len_tok_voc = len(token_to_id)
     len_char_voc = len(char_to_id)
-
-    print('Tokenizing data...')
-    data = tokenize_data(data, token_to_id, char_to_id)
 
     id_to_token = {id_: tok for tok, id_ in token_to_id.items()}
     id_to_char = {id_: char for char, id_ in char_to_id.items()}

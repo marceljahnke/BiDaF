@@ -8,6 +8,7 @@ Module used to manage data:
 """
 import h5py
 import torch
+import json
 from torch.autograd import Variable
 import numpy as np
 from tqdm import tqdm
@@ -17,14 +18,22 @@ from text_input import rich_tokenize
 def load_data_from_h5(file, use_dummy_qids=False):
     print(f'Loading data from {file}...')
     with h5py.File(file, 'r') as fp:
-        queries = list(fp['queries'])
-        qids = list(np.ones((len(queries),))) if use_dummy_qids else list(fp['qids'])
-        passages = list(fp['passages'])
         labels = list(fp['labels'])
+        qids = list(np.ones((len(labels),))) if use_dummy_qids else list(fp['qids'])
+        q_tokens = list(fp['q_tokens'])
+        q_chars = [json.loads(q_char) for q_char in list(fp['q_chars'])]
+        p_tokens = list(fp['p_tokens'])
+        p_chars = [json.loads(p_char) for p_char in list(fp['p_chars'])]
+
+        vocab = fp['vocab'][()]
+        c_vocab = fp['c_vocab'][()]
+        id_to_token = {id_: tok for id_, tok in enumerate(vocab)}
+        id_to_char = {id_: tok for id_, tok in enumerate(c_vocab)}
+
         max_passage_length = fp['max_passage_length'][()]
 
-    data = list(zip(qids, queries, passages, labels))
-    return data, max_passage_length
+    data = list(zip(qids, zip(q_tokens, q_chars), zip(p_tokens, p_chars), labels))
+    return data, id_to_token, id_to_char, max_passage_length
 
 def load_data(source, span_only, answered_only):
     """
