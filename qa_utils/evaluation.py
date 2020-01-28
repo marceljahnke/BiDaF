@@ -9,8 +9,8 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score
 
-from qa_utils.io import batch_to_device
 from qa_utils.misc import Logger
+from qa_utils.io import batches_to_device
 
 
 def read_args(working_dir):
@@ -100,7 +100,7 @@ def evaluate(model, dataloader, k, device, has_multiple_inputs):
     for batch in tqdm(dataloader):
         q_ids, inputs, labels = batch
         if has_multiple_inputs:
-            inputs = batch_to_device(inputs, device)
+            inputs = batches_to_device(inputs, device)
             predictions = model(*inputs).cpu().detach()
         else:
             predictions = model(inputs.to(device)).cpu().detach()
@@ -130,7 +130,7 @@ def evaluate(model, dataloader, k, device, has_multiple_inputs):
 
 
 def evaluate_all(model, working_dir, dev_dl, test_dl, k, device, has_multiple_inputs=False,
-                 dev_metric='mrr', test_metrics=['map', 'mrr']):
+                 dev_metric='mrr', test_metrics=['map', 'mrr'], interval=1):
     """Evaluate each checkpoint in the working directory against the devset. Afterwards, evaluate
     the checkpoint with the highest dev metric against the testset. The results are saved in a log
     file.
@@ -147,13 +147,17 @@ def evaluate_all(model, working_dir, dev_dl, test_dl, k, device, has_multiple_in
         has_multiple_inputs {bool} -- Whether the input is a a list of tensors (default: {False})
         dev_metric {str} -- The metric to use for validation (default: {'mrr'})
         test_metrics {list[str]} -- The metrics to report on the testset (default: {['map', 'mrr']})
+        interval {int} -- Evaluate only one in this many checkpoints (default: {1})
     """
     dev_file = os.path.join(working_dir, 'dev.csv')
     dev_logger = Logger(dev_file, ['ckpt', dev_metric])
     best = 0
     best_ckpt = None
     model.eval()
-    for ckpt in get_checkpoints(os.path.join(working_dir, 'ckpt'), r'weights_(\d+).pt'):
+    for i, ckpt in enumerate(get_checkpoints(os.path.join(working_dir, 'ckpt'), r'weights_(\d+).pt')):
+        if (i + 1) % interval != 0:
+            continue
+
         print('[dev] processing {}...'.format(ckpt))
         state = torch.load(ckpt)
         model.module.load_state_dict(state['state_dict'])
